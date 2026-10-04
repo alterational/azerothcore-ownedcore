@@ -1,5 +1,7 @@
 # GitHub destination discovery
 
-The exact requested repository was found read-only as [`alterational/azerothcore-ownedcore`](https://github.com/alterational/azerothcore-ownedcore). `gh repo view` reported the default branch as `main`. The local clone's `origin/main` points at that repository; its inspected starter tree contains only `LICENSE` and a short `README.md`.
+The exact requested repository was found read-only as [`alterational/azerothcore-ownedcore`](https://github.com/alterational/azerothcore-ownedcore). `gh repo view` reported the default branch as `main`; its inspected starter tree contained `LICENSE` and the original `README.md`.
 
-No files have been written to GitHub, no remote commits or branches were created, and no push/PR has been made. This workspace is being prepared locally only, as requested. All work remains on Arena's session branch; destination branch `main` is the intended eventual target, not the branch to switch to in this session.
+The prepared project was committed and pushed only to Arena's session branch, `arena/01a106ef-azerothcore-ownedcore`, and pull request [#1](https://github.com/alterational/azerothcore-ownedcore/pull/1) is open against `main`. The PR has **not** been merged; `main` remains unchanged.
+
+GitHub Codespaces access is not available through the current integration: listing codespaces returns HTTP 403 (`Resource not accessible by integration`), and a create attempt reports `you cannot create codespaces with that repository`. No Codespace was created. No other branch was created or pushed.
