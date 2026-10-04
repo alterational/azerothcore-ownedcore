@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "core_commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
+  "description": "Audited non-master module settings; Dynamic.XP.Rate is handled by the existing master-switch map, and only TimeIsTime.SpeedRate differs from its pinned upstream default.",
+  "settings": [
+    {
+      "module_id": "mod-rdf-expansion",
+      "source_commit": "c7a91c5973cda4529495b52b89375913f98726d6",
+      "source_config": "conf/mod-rdf-expansion.conf.dist",
+      "runtime_config": "mod-rdf-expansion.conf",
+      "key": "RDF.Expansion",
+      "upstream_default": "2",
+      "target": "2",
+      "evidence": "OwnedCore page 88 identifies 2 as WotLK; pinned module template and source both default to 2."
+    },
+    {
+      "module_id": "mod-TimeIsTime",
+      "source_commit": "abfb3a7a031c168c481642604c1389a5d92f4499",
+      "source_config": "conf/mod-time_is_time.conf.dist",
+      "runtime_config": "mod-time_is_time.conf",
+      "key": "TimeIsTime.SpeedRate",
+      "upstream_default": "1.0",
+      "target": "15.0",
+      "evidence": "OwnedCore page 88 specifies 15 (one in-game day per 96 real minutes); the pinned module's default is 1.0."
+    }
+  ]
+}

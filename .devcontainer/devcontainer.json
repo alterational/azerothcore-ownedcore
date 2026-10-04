@@ -1,0 +1,19 @@
+{
+  "name": "AzerothCore OwnedCore rebuild",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    }
+  },
+  "postCreateCommand": "python3 scripts/validate_project.py && python3 scripts/materialize.py && python3 scripts/validate_project.py --check-checkout && python3 scripts/apply_source_patches.py --apply && python3 scripts/apply_source_patches.py --check && python3 scripts/apply_module_config.py --apply --source-templates && python3 scripts/apply_additional_settings.py --apply --source-templates && python3 scripts/apply_module_config.py --check --source-templates && python3 scripts/apply_additional_settings.py --check --source-templates && python3 scripts/check_core_defaults.py",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-vscode.cpptools"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}
