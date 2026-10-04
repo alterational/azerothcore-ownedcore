@@ -1,0 +1,7 @@
+diff --git a/src/BGQueueChecker.cpp b/src/BGQueueChecker.cpp
+index 71cbc89..7631fd8 100644
+--- a/src/BGQueueChecker.cpp
++++ b/src/BGQueueChecker.cpp
+@@ -11 +11 @@ public:
+-    bool CanJoinInBattlegroundQueue(Player* player, ObjectGuid /*BattlemasterGuid*/, BattlegroundTypeId /*BGTypeID*/, uint8 joinAsGroup, GroupJoinBattlegroundResult& err) override
++    bool OnPlayerCanJoinInBattlegroundQueue(Player* player, ObjectGuid /*BattlemasterGuid*/, BattlegroundTypeId /*BGTypeID*/, uint8 joinAsGroup, GroupJoinBattlegroundResult& err) override

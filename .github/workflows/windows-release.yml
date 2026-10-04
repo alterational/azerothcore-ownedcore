@@ -51,6 +51,12 @@ jobs:
         shell: pwsh
         run: python scripts/check_core_defaults.py --require-target
 
+      - name: Apply and verify tracked source compatibility patches
+        shell: pwsh
+        run: |
+          python scripts/apply_source_patches.py --apply
+          python scripts/apply_source_patches.py --check
+
       - name: Apply and check tracked module templates
         shell: pwsh
         run: |
