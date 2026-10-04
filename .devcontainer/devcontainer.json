@@ -6,7 +6,7 @@
       "version": "3.11"
     }
   },
-  "postCreateCommand": "python3 scripts/validate_project.py",
+  "postCreateCommand": "python3 scripts/validate_project.py && python3 scripts/materialize.py && python3 scripts/apply_module_config.py --apply --source-templates && python3 scripts/apply_module_config.py --check --source-templates",
   "customizations": {
     "vscode": {
       "extensions": [

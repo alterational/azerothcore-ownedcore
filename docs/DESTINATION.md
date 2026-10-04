@@ -4,4 +4,4 @@ The exact requested repository was found read-only as [`alterational/azerothcore
 
 The prepared project was committed and pushed only to Arena's session branch, `arena/01a106ef-azerothcore-ownedcore`, and pull request [#1](https://github.com/alterational/azerothcore-ownedcore/pull/1) is open against `main`. The PR has **not** been merged; `main` remains unchanged.
 
-GitHub Codespaces access is not available through the current integration: listing codespaces returns HTTP 403 (`Resource not accessible by integration`), and a create attempt reports `you cannot create codespaces with that repository`. No Codespace was created. No other branch was created or pushed.
+This agent's GitHub integration cannot list/create Codespaces (list returned HTTP 403; create was denied). The user reports creating a Codespace manually. The earlier `postCreateCommand` only validated metadata, so it did not materialize `core/`; the updated command now fetches and configures sources in a newly created/rebuilt Codespace. Existing Codespaces must pull the branch update and run the documented preparation commands or rebuild the container. No other branch was created or pushed.

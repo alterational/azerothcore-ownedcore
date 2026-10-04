@@ -4,7 +4,7 @@
 
 `.github/workflows/validate.yml` runs on pushes and pull requests targeting `main` (and can be dispatched manually). It verifies manifest/lock consistency, the pinned source-state decisions and config-map shape, Python syntax, and JSON syntax. It does **not** fetch sources, compile AzerothCore, start a server, validate a database, require game data, or prove runtime behavior.
 
-The dev container intentionally performs only metadata validation. It does not download the approximately 1.5 GB source tree or start a compiler automatically.
+On Codespaces creation, the dev container validates metadata, downloads the approximately 1.5 GB pinned core/module source tree, and applies/checks the audited `.conf.dist` switches. It does **not** install system dependencies, compile, start a server, or apply SQL. An already-created Codespace does not rerun `postCreateCommand`; if it was created before this behavior was added, run the preparation commands manually below or rebuild the container.
 
 ## Build on demand
 
