@@ -152,6 +152,7 @@ jobs:
           Get-Content 'core/conf/config.sh'
 
       - name: Build and install server
+        id: windows-build
         shell: bash
         working-directory: core
         env:
@@ -159,7 +160,24 @@ jobs:
           CC: cl
           CXX: cl
           RC: rc
-        run: ./acore.sh compiler all
+        run: |
+          set -o pipefail
+          ./acore.sh compiler all 2>&1 | tee windows-build.log
+
+      - name: Surface Windows build errors in the check run
+        if: failure() && steps.windows-build.outcome == 'failure'
+        shell: pwsh
+        run: |
+          $log = Join-Path $env:GITHUB_WORKSPACE 'core\\windows-build.log'
+          if (-not (Test-Path $log)) { Write-Output 'Build log was not created.'; exit 0 }
+          $errors = Select-String -Path $log -Pattern 'error C[0-9]+|fatal error|error:|CMake Error|FAILED:|ninja: build stopped' | Select-Object -Last 30
+          $tail = Get-Content -LiteralPath $log -Tail 80
+          '### Windows build diagnostics' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          $errors | ForEach-Object { $_.Line | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8 }
+          $tail | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          foreach ($errorLine in $errors) { Write-Output "::error title=Windows build diagnostic::$($errorLine.Line)" }
 
       - name: Create fresh runtime config files
         shell: pwsh
