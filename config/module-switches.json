@@ -1,0 +1,954 @@
+{
+  "schema_version": 1,
+  "audited_at": "2026-10-04",
+  "core_commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
+  "source_of_target_state": "modules.manifest.json: modules[].enabled",
+  "runtime_mechanism": {
+    "config_output_directory": "core/env/dist/etc",
+    "active_module_directory": "modules",
+    "runtime_suffix": ".conf",
+    "loaded_by": "Pinned core: modules/CMakeLists.txt compiles CONFIG_FILE_LIST from each module conf/*.conf.dist; worldserver Main.cpp passes CONFIG_FILE_LIST to ConfigMgr, and ConfigMgr::LoadModulesConfigs reads the named files from GetConfigPath()+\"modules/\". acore.sh compiler install copies missing .conf files from .conf.dist by default."
+  },
+  "modules": {
+    "mod-1v1-arena": {
+      "source_commit": "5ef5708d031f3b02283e6e599aa655bd320d904e",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/1v1arena.conf.dist",
+      "runtime_config": "1v1arena.conf",
+      "switch": {
+        "key": "Arena1v1.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 11,
+        "code_reference": "src/cs_1v1arena.cpp:52"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-account-achievements": {
+      "source_commit": "bfbe3677635feeef823057964e028e023633115a",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_achievements.conf.dist",
+      "runtime_config": "mod_achievements.conf",
+      "switch": {
+        "key": "Account.Achievements.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 9,
+        "code_reference": "src/mod_achievements.cpp:50"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-ah-bot": {
+      "source_commit": "c11d8318cbd8714a9980f9464f78e07d3d48a70a",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/mod_ahbot.conf.dist",
+      "runtime_config": "mod_ahbot.conf",
+      "switch": null,
+      "review_note": "No module-wide enable switch. AuctionHouseBot.EnableSeller and .EnableBuyer are separate operational roles and both default to 0; leave them unchanged until seller/buyer accounts, SQL, and economy behavior are deliberately configured."
+    },
+    "mod-autobalance": {
+      "source_commit": "73d4ad3c379fbfc35c63b5b9b44fba1f7d9e213d",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/AutoBalance.conf.dist",
+      "runtime_config": "AutoBalance.conf",
+      "switch": {
+        "key": "AutoBalance.Enable.Global",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 27,
+        "code_reference": "src/ABWorldScript.cpp:102"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-auto-revive": {
+      "source_commit": "ce5ca7a600dbef0dec48dc6da42d374d08d6b728",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/AutoRevive.conf.dist",
+      "runtime_config": "AutoRevive.conf",
+      "switch": {
+        "key": "AutoRevive.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 16,
+        "code_reference": "src/AutoRevive.cpp:18"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-better-item-reloading": {
+      "source_commit": "24617d0f94d0bc6d24993e4581661af5c7629b5e",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": null,
+      "runtime_config": null,
+      "switch": null,
+      "review_note": "No module .conf.dist or module-wide runtime switch was found; its source hooks are active when the module is compiled."
+    },
+    "BGQueueChecker": {
+      "source_commit": "0a6b9872f5d4f50286e5152c0debfeb1d6ef73a0",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/bgqueuechecker.conf.dist",
+      "runtime_config": "bgqueuechecker.conf",
+      "switch": {
+        "key": "BGQueueChecker.Enable",
+        "upstream_default": "0",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 17,
+        "code_reference": "src/BGQueueChecker.cpp:13"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-boss-announcer": {
+      "source_commit": "3af6e83e976a9a143ded51f4e8afeb69863fb5ec",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_boss_announcer.conf.dist",
+      "runtime_config": "mod_boss_announcer.conf",
+      "switch": {
+        "key": "Boss.Announcer.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 13,
+        "code_reference": "src/mod_boss_announcer.cpp:241"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-breaking-news-override": {
+      "source_commit": "1016344718b1ace3235b00469f0df65d544371db",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/breakingnews.conf.dist",
+      "runtime_config": "breakingnews.conf",
+      "switch": {
+        "key": "BreakingNews.Enable",
+        "upstream_default": "0",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 17,
+        "code_reference": "src/BreakingNews.cpp:146"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-challenge-modes": {
+      "source_commit": "1930525b9530d329cb9fe0504a3c9b5b40a12261",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/challenge_modes.conf.dist",
+      "runtime_config": "challenge_modes.conf",
+      "switch": {
+        "key": "ChallengeModes.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 17,
+        "code_reference": "src/ChallengeModes.cpp:263"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-changeablespawnrates": {
+      "source_commit": "c51cd270034d347e767f0ab4c5498693c41109e3",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod-changeablespawnrates.conf.dist",
+      "runtime_config": "mod-changeablespawnrates.conf",
+      "switch": {
+        "key": "Module.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 14,
+        "code_reference": "src/ChangeableSpawnrates.cpp:213"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-playerbots-city-life": {
+      "source_commit": "ce6a05df450f04c4961d09254ad73cf11f1afee2",
+      "manifest_policy": "leave_upstream_default",
+      "status": "upstream_default",
+      "source_config": "conf/mod_playerbots_city_life.conf.dist",
+      "runtime_config": "mod_playerbots_city_life.conf",
+      "switch": {
+        "key": "CityLife.Enable",
+        "upstream_default": "1",
+        "source_line": 8,
+        "code_reference": "src/CityLifeMgr.cpp:144"
+      },
+      "review_note": "Explicit user decision: do not override; retain enabled upstream default."
+    },
+    "mod-dead-means-dead": {
+      "source_commit": "725b14973be28c4acea7d1a892bbe7cfdd2e8a51",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_dead_means_dead.conf.dist",
+      "runtime_config": "mod_dead_means_dead.conf",
+      "switch": {
+        "key": "DeadMeansDead.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 13,
+        "code_reference": "src/DeadMeansDead.cpp:36"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-desertion-warnings": {
+      "source_commit": "ed1b7e26869d520b7627c289d461fbc5d040be6a",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/desertion-warnings.conf.dist",
+      "runtime_config": "desertion-warnings.conf",
+      "switch": {
+        "key": "DesertionWarnings.Enabled",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 1,
+        "code_reference": "src/DesertionWarnings.cpp:32"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-duel-reset": {
+      "source_commit": "f2c67d4d82b79cefccfc89a4696a428529cf8cfd",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/duelreset.conf.dist",
+      "runtime_config": "duelreset.conf",
+      "switch": null,
+      "review_note": "The config contains cooldown, health/mana, and zone/area behavior settings but no module-wide switch."
+    },
+    "mod-dungeon-clear": {
+      "source_commit": "60f3d98b83143714041df4120abd45f0e3c3ebd7",
+      "manifest_policy": "leave_upstream_default",
+      "status": "upstream_default",
+      "source_config": "conf/mod_dungeon_clear.conf.dist",
+      "runtime_config": "mod_dungeon_clear.conf",
+      "switch": {
+        "key": "DungeonClear.Enable",
+        "upstream_default": "1",
+        "source_line": 78,
+        "code_reference": "src/DcModuleEnable.cpp:63"
+      },
+      "review_note": "Explicit user decision: do not override; retain enabled upstream default."
+    },
+    "mod-dynamic-loot-rates": {
+      "source_commit": "41ffb6a7c5bc78d1c062b8237a9a185892514a32",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_dynamic_loot_rates.conf.dist",
+      "runtime_config": "mod_dynamic_loot_rates.conf",
+      "switch": {
+        "key": "DynamicLootRates.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 13,
+        "code_reference": "src/mod_dynamic_loot_rates.cpp:26"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-dynamic-xp": {
+      "source_commit": "06d5d370aa7d8d8644ed241f03a986e28195c2f4",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/dynamicxp.conf.dist",
+      "runtime_config": "dynamicxp.conf",
+      "switch": {
+        "key": "Dynamic.XP.Rate",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 19,
+        "code_reference": "src/dynamicxp.cpp:23"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-emblem-transfer": {
+      "source_commit": "feb2007a50c77680bd6d15aaaf45e8a185dad7cf",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/emblem_transfer.conf.dist",
+      "runtime_config": "emblem_transfer.conf",
+      "switch": null,
+      "review_note": "The config contains transfer amount, penalty, and per-emblem options but no module-wide switch."
+    },
+    "mod-fireworks-on-level": {
+      "source_commit": "e5c58542996e0f1ad3410ebdb7cff9ed9d52e3d6",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_customserver.conf.dist",
+      "runtime_config": "mod_customserver.conf",
+      "switch": {
+        "key": "CustomServer.FireworkLevels",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 14,
+        "code_reference": "src/mod_customserver.cpp:84"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-fly-anywhere": {
+      "source_commit": "141b789f9b9c99ebf0c5391df9dafb825f967f9a",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/fly-anywhere.conf.dist",
+      "runtime_config": "fly-anywhere.conf",
+      "switch": {
+        "key": "FlyAnywhere.Enabled",
+        "upstream_default": "true",
+        "enabled_value": "true",
+        "disabled_value": "false",
+        "source_line": 14,
+        "code_reference": "src/FlyAnywhereScript.cpp:25"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-guildhouse": {
+      "source_commit": "0b3cc14e947a859f8a7751a10676107d6316275b",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/mod_guildhouse.conf.dist",
+      "runtime_config": "mod_guildhouse.conf",
+      "switch": null,
+      "review_note": "The config contains guildhouse service prices/ranks but no module-wide switch."
+    },
+    "mod-improved-bank": {
+      "source_commit": "89fc606fe6945f201f15f8a3bbc61d01552ea94c",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/mod_improved_bank.conf.dist",
+      "runtime_config": "mod_improved_bank.conf",
+      "switch": null,
+      "review_note": "The config contains bank feature settings but no module-wide switch."
+    },
+    "mod-individual-progression": {
+      "source_commit": "60336b349cce2bc209d154bb840f2370f1cc16f2",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/individualProgression.conf.dist",
+      "runtime_config": "individualProgression.conf",
+      "switch": {
+        "key": "IndividualProgression.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 21,
+        "code_reference": "src/IndividualProgression.cpp:1045"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-individual-xp": {
+      "source_commit": "503471f766bc4f21dca0aa05e6a9d3d40718a780",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/individual_xp.conf.dist",
+      "runtime_config": "individual_xp.conf",
+      "switch": {
+        "key": "IndividualXp.Enabled",
+        "upstream_default": "true",
+        "enabled_value": "true",
+        "disabled_value": "false",
+        "source_line": 14,
+        "code_reference": "src/individual_xp.cpp:45"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-instance-reset": {
+      "source_commit": "1e2c20770f40f5382348b7649291371f47c86812",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/instance-reset.conf.dist",
+      "runtime_config": "instance-reset.conf",
+      "switch": {
+        "key": "instanceReset.Enable",
+        "upstream_default": "true",
+        "enabled_value": "true",
+        "disabled_value": "false",
+        "source_line": 10,
+        "code_reference": "src/instance_reset.cpp:239"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-junk-to-gold": {
+      "source_commit": "2134690bb03899e5c9e44d0682e8e6abf0bbbaf2",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": null,
+      "runtime_config": null,
+      "switch": null,
+      "review_note": "No module .conf.dist or module-wide runtime switch was found; its source hooks are active when compiled."
+    },
+    "mod-learn-spells": {
+      "source_commit": "016b92d520f343d074ffd5d46016a94f4a3a6ebd",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_learnspells.conf.dist",
+      "runtime_config": "mod_learnspells.conf",
+      "switch": {
+        "key": "LearnSpells.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 9,
+        "code_reference": "src/mod_learnspells.cpp:33"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-low-level-rbg": {
+      "source_commit": "dcb8989b0635fb6de0477818de2579de1930267f",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/low_level_rbg.conf.dist",
+      "runtime_config": "low_level_rbg.conf",
+      "switch": null,
+      "review_note": "The config sets queue level bounds only; no module-wide enable switch was found."
+    },
+    "mod-morphsummon": {
+      "source_commit": "b1fc9db72b5acbdd30639a131fe84da53c82d8f2",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/morphsummon.conf.dist",
+      "runtime_config": "morphsummon.conf",
+      "switch": {
+        "key": "MorphSummon.Enabled",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 9,
+        "code_reference": "src/morphsummon.cpp:528"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-multibot-bridge": {
+      "source_commit": "1da05982e478cb00e0b6c87314afe7e0e9653ffb",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/MultiBotBridge.conf.dist",
+      "runtime_config": "MultiBotBridge.conf",
+      "switch": null,
+      "review_note": "The only config setting toggles console logging; it is not a module enable switch."
+    },
+    "mod-npc-beastmaster": {
+      "source_commit": "99dbd9b73f63c39b0773c575bea7a8add8049ccf",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_npc_beastmaster.conf.dist",
+      "runtime_config": "mod_npc_beastmaster.conf",
+      "switch": {
+        "key": "BeastMaster.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 10,
+        "code_reference": "src/NpcBeastmaster.cpp:337"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-npc-buffer": {
+      "source_commit": "532a6ba80c31b673338fcdb747cb2226bec4887e",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/npc_buffer.conf.dist",
+      "runtime_config": "npc_buffer.conf",
+      "switch": {
+        "key": "Buff.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 12,
+        "code_reference": "src/npc_buffer.cpp:96"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-npc-enchanter": {
+      "source_commit": "af32add66eafc0e0eb8775999e76ceed75f18b74",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/npc_enchanter.conf.dist",
+      "runtime_config": "npc_enchanter.conf",
+      "switch": {
+        "key": "Enchanter.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 12,
+        "code_reference": "src/npc_enchanter.cpp:213"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-npc-spectator": {
+      "source_commit": "8c9683a2bd8dcb901cc5338342376b15df9e244b",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/npc_spectator.conf.dist",
+      "runtime_config": "npc_spectator.conf",
+      "switch": {
+        "key": "NpcArenaSpectator.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 11,
+        "code_reference": "src/ArenaSpectatorNPC_SC.cpp:66"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-npc-talent-template": {
+      "source_commit": "d536079191e6ecabb18273b3e46f7583ad19e355",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/npc_talent_template.conf.dist",
+      "runtime_config": "npc_talent_template.conf",
+      "switch": null,
+      "review_note": "Config switches control individual gossip actions (reset talents, glyphs, and gear); no module-wide switch exists."
+    },
+    "mod-phased-duels": {
+      "source_commit": "8f122d9c6fb5fc895a232cbc05b30b72ebc455b2",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_phased_duels.conf.dist",
+      "runtime_config": "mod_phased_duels.conf",
+      "switch": {
+        "key": "PhasedDuels.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 9,
+        "code_reference": "src/mod_phased_duels.cpp:27"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-player-bot-guildhouse": {
+      "source_commit": "1d4d649982a523b674321f6ca4c23d11e60c1b7b",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/mod_player_bot_guildhouse.conf.dist",
+      "runtime_config": "mod_player_bot_guildhouse.conf",
+      "switch": null,
+      "review_note": "Config settings tune behavior; no module-wide enable switch was found."
+    },
+    "mod-playerbots": {
+      "source_commit": "037c01418b5d01506917a3db9b44fd56ac5f965c",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/playerbots.conf.dist",
+      "runtime_config": "playerbots.conf",
+      "switch": {
+        "key": "AiPlayerbot.Enabled",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 83,
+        "code_reference": "src/PlayerbotAIConfig.cpp:83"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-pvp-titles": {
+      "source_commit": "2c7c16a4ff504cb43d60919552581833d7efcb05",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_pvptitles.conf.dist",
+      "runtime_config": "mod_pvptitles.conf",
+      "switch": {
+        "key": "PvPTitles.Enable",
+        "upstream_default": "0",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 9,
+        "code_reference": "src/mod_pvp_titles.cpp:123"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-queue-list-cache": {
+      "source_commit": "27279f247af0c932962f512d3fc261aefb8dc195",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/QueueListCache.conf.dist",
+      "runtime_config": "QueueListCache.conf",
+      "switch": {
+        "key": "QLC.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 29,
+        "code_reference": "src/QueueListCache.cpp:24"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-quick-teleport": {
+      "source_commit": "3a88ac0f294f7ce21441fb3cb3de13f87c9683eb",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/quick_teleport.conf.dist",
+      "runtime_config": "quick_teleport.conf",
+      "switch": {
+        "key": "QuickTeleport.enabled",
+        "upstream_default": "true",
+        "enabled_value": "true",
+        "disabled_value": "false",
+        "source_line": 10,
+        "code_reference": "src/QuickTeleport.cpp:38"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-racial-trait-swap": {
+      "source_commit": "8ae1e6fab13b4660eed76aca8fce998a18343048",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/RacialTraitSwap.conf.dist",
+      "runtime_config": "RacialTraitSwap.conf",
+      "switch": null,
+      "review_note": "The config exposes login announcement and cost settings only; no module-wide enable switch was found."
+    },
+    "mod-rdf-expansion": {
+      "source_commit": "c7a91c5973cda4529495b52b89375913f98726d6",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/mod-rdf-expansion.conf.dist",
+      "runtime_config": "mod-rdf-expansion.conf",
+      "switch": null,
+      "review_note": "The config selects the RDF expansion behavior; it has no module-wide enable switch."
+    },
+    "mod-reagent-bank": {
+      "source_commit": "62c265338ceba10fb754394413e6c4c61cedf9de",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/reagent_bank.conf.dist",
+      "runtime_config": "reagent_bank.conf",
+      "switch": null,
+      "review_note": "The pinned .conf.dist contains ReagentBank.Enable=1, but the pinned C++ sources do not read this key; it is not an effective runtime master switch. The module hooks are compiled in."
+    },
+    "mod-reward-played-time": {
+      "source_commit": "0a22f9904878e909287daa9c22deeedc7dc5ff24",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/reward_system.conf.dist",
+      "runtime_config": "reward_system.conf",
+      "switch": {
+        "key": "RewardSystemEnable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 15,
+        "code_reference": "src/reward_system.cpp:29"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-solo-lfg": {
+      "source_commit": "3821fe1d108ade8d2b7ad6611e41154e05864c65",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/SoloLfg.conf.dist",
+      "runtime_config": "SoloLfg.conf",
+      "switch": {
+        "key": "SoloLFG.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 13,
+        "code_reference": "src/Lfg_Solo.cpp:33"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-TimeIsTime": {
+      "source_commit": "abfb3a7a031c168c481642604c1389a5d92f4499",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod-time_is_time.conf.dist",
+      "runtime_config": "mod-time_is_time.conf",
+      "switch": {
+        "key": "TimeIsTime.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 26,
+        "code_reference": "src/TimeIsTime.cpp:27"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-top-arena": {
+      "source_commit": "0cef3e349c93d95ef6fc9f9ffa45772a4f338257",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/modarenatop.conf.dist",
+      "runtime_config": "modarenatop.conf",
+      "switch": null,
+      "review_note": "The config only controls a Hello World startup message; no module-wide enable switch was found."
+    },
+    "mod-transmog": {
+      "source_commit": "0d85cbc53d63ce2df8527169ce6ae47f5f6f6ba8",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/transmog.conf.dist",
+      "runtime_config": "transmog.conf",
+      "switch": {
+        "key": "Transmogrification.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 87,
+        "code_reference": "src/Transmogrification.cpp:1101"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod_weather_vibe": {
+      "source_commit": "cb854eb96ef9fa7fa4fd1f6e2d3340fcadb945e8",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_weather_vibe.conf.dist",
+      "runtime_config": "mod_weather_vibe.conf",
+      "switch": {
+        "key": "WeatherVibe.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 15,
+        "code_reference": "src/core/mod_wv_core.cpp:55"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-who-logged": {
+      "source_commit": "3f439d0aa56d3a4782dee1467f1bdcb16b35aa2f",
+      "manifest_policy": "match_manifest_state",
+      "status": "no_master_switch",
+      "source_config": "conf/who-logged.conf.dist",
+      "runtime_config": "who-logged.conf",
+      "switch": null,
+      "review_note": "The config has separate login/logout announcement toggles; no module-wide switch exists. The upstream login-announce default remains unchanged."
+    },
+    "mod-account-mounts": {
+      "source_commit": "0a3b4c4cc084ebbbb7e7e07f88222a08a70b0dde",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_account_mount.conf.dist",
+      "runtime_config": "mod_account_mount.conf",
+      "switch": {
+        "key": "Account.Mounts.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 9,
+        "code_reference": "src/mod_account_mount.cpp:41"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-war-effort": {
+      "source_commit": "512a2dd97e6589482148ed870dc67e7292a8c5ac",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_aq_war_effort.conf.dist",
+      "runtime_config": "mod_aq_war_effort.conf",
+      "switch": {
+        "key": "ModWarEffort.Enable",
+        "upstream_default": "0",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 17,
+        "code_reference": "src/WarEffort.h:286"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-aoe-loot": {
+      "source_commit": "be4f06af8e1b455cc31a227f12e2d0a741c799e0",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_aoe_loot.conf.dist",
+      "runtime_config": "mod_aoe_loot.conf",
+      "switch": {
+        "key": "AOELoot.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 12,
+        "code_reference": "src/aoe_loot.cpp:46"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-cfbg": {
+      "source_commit": "78771c6d0d9d5fcd80206eaeb9668452adcbf4ee",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/CFBG.conf.dist",
+      "runtime_config": "CFBG.conf",
+      "switch": {
+        "key": "CFBG.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 136,
+        "code_reference": "src/CFBG.cpp:100"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-leech": {
+      "source_commit": "da779951a82d909fa2202360c015af84c4f8ec41",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/leech.conf.dist",
+      "runtime_config": "leech.conf",
+      "switch": {
+        "key": "Leech.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 17,
+        "code_reference": "src/Leech.cpp:50"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-money-for-kills": {
+      "source_commit": "cd365d91bf20f0c9044298e6f85cbf8f4373bf51",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_moneyforkills.conf.dist",
+      "runtime_config": "mod_moneyforkills.conf",
+      "switch": {
+        "key": "MFK.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 10,
+        "code_reference": "src/mod_moneyforkills.cpp:96"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-no-hearthstone-cooldown": {
+      "source_commit": "832ef5e6d7268876112be65202ee8e60d287a936",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_no_hearthstone_cooldown.conf.dist",
+      "runtime_config": "mod_no_hearthstone_cooldown.conf",
+      "switch": {
+        "key": "NoHearthstoneCooldown.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 22,
+        "code_reference": "src/NoHearthstoneCooldown.cpp:33"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-npc-free-professions": {
+      "source_commit": "01d8624f9c0789550c0b04b23c54928b054619ce",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_npc_free_professions.conf.dist",
+      "runtime_config": "mod_npc_free_professions.conf",
+      "switch": {
+        "key": "NpcFreeProfessions.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 14,
+        "code_reference": "src/ProfessionNPC.cpp:32"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-ollama-chat": {
+      "source_commit": "a9966f3e6b20efb98aab8b56ff9d997d8e1bcc06",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_ollama_chat.conf.dist",
+      "runtime_config": "mod_ollama_chat.conf",
+      "switch": {
+        "key": "OllamaChat.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 14,
+        "code_reference": "src/mod-ollama-chat_config.cpp:531"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-player-bot-level-brackets": {
+      "source_commit": "a94f9c6458bf6264164436a53ddd4e5c3ed44fdb",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_player_bot_level_brackets.conf.dist",
+      "runtime_config": "mod_player_bot_level_brackets.conf",
+      "switch": {
+        "key": "BotLevelBrackets.Enabled",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 11,
+        "code_reference": "src/mod-player-bot-level-brackets.cpp:116"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-pvp-zones": {
+      "source_commit": "14f6eddcec993fa7a7af05b2ccdb069ed20339c9",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/mod_pvp_zones.conf.dist",
+      "runtime_config": "mod_pvp_zones.conf",
+      "switch": {
+        "key": "pvp_zones.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 2,
+        "code_reference": "src/ZoneScript.cpp:61"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-random-enchants": {
+      "source_commit": "6d49d64918f1e798490d0139038a33194fd294df",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/random_enchants.conf.dist",
+      "runtime_config": "random_enchants.conf",
+      "switch": {
+        "key": "RandomEnchants.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 13,
+        "code_reference": "src/random_enchants.cpp:6"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-server-auto-shutdown": {
+      "source_commit": "625b145109553ed56ec2b2d36d6e7b06fee43520",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/ServerAutoShutdown.conf.dist",
+      "runtime_config": "ServerAutoShutdown.conf",
+      "switch": {
+        "key": "ServerAutoShutdown.Enabled",
+        "upstream_default": "0",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 16,
+        "code_reference": "src/ServerAutoShutdown.cpp:87"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    },
+    "mod-skip-dk-starting-area": {
+      "source_commit": "cd0bac42056cc469399487269acbb96264ff813e",
+      "manifest_policy": "match_manifest_state",
+      "status": "master_switch",
+      "source_config": "conf/skip_dk_module.conf.dist",
+      "runtime_config": "skip_dk_module.conf",
+      "switch": {
+        "key": "Skip.Deathknight.Starter.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 23,
+        "code_reference": "src/SkipDK.cpp:163"
+      },
+      "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
+    }
+  }
+}

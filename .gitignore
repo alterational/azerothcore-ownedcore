@@ -1,0 +1,56 @@
+# Source repositories are fetched only on demand; never add the generated checkout.
+/core/
+
+# CMake and server build/output products.
+/build/
+/bin/
+/lib/
+/logs/
+/env/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.o
+*.a
+*.so
+
+# Local secrets, server-specific runtime config, and database backups.
+.env
+.env.*
+!.env.example
+worldserver.conf
+authserver.conf
+*.conf
+*.sql.gz
+*.sql.xz
+*.sql.zst
+*_dump.sql
+*.dump
+*.dmp
+*.db
+*.sqlite
+*.sqlite3
+*.bak
+*.log
+*.pid
+*.pem
+*.key
+*.p12
+*.pfx
+/secrets/
+/dumps/
+/backups/
+/Data/
+/dbc/
+/maps/
+/vmaps/
+/mmaps/
+
+# Generated Python/editor/operating-system files.
+__pycache__/
+*.py[cod]
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

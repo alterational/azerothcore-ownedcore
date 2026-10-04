@@ -1,0 +1,32 @@
+name: Validate module manifest and source lock
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate manifest and pinned sources
+        run: python3 scripts/validate_project.py
+      - name: Check Python syntax
+        run: python3 -m py_compile scripts/*.py
+      - name: Parse JSON files
+        run: |
+          python3 -m json.tool modules.manifest.json >/dev/null
+          python3 -m json.tool modules.lock.json >/dev/null
+          python3 -m json.tool .devcontainer/devcontainer.json >/dev/null
+          python3 -m json.tool config/module-switches.json >/dev/null

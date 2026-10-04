@@ -1,0 +1,476 @@
+{
+  "schema_version": 1,
+  "resolved_at": "2026-10-04",
+  "resolution_method": "git ls-remote --symref; commit pins are candidate remote tips, not compile-tested",
+  "core": {
+    "url": "https://github.com/mod-playerbots/azerothcore-wotlk.git",
+    "branch": "Playerbot",
+    "commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
+    "resolved": true,
+    "refresh_ok": true
+  },
+  "modules": {
+    "mod-1v1-arena": {
+      "url": "https://github.com/azerothcore/mod-1v1-arena.git",
+      "branch": "master",
+      "commit": "5ef5708d031f3b02283e6e599aa655bd320d904e",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-account-achievements": {
+      "url": "https://github.com/azerothcore/mod-account-achievements.git",
+      "branch": "master",
+      "commit": "bfbe3677635feeef823057964e028e023633115a",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-ah-bot": {
+      "url": "https://github.com/azerothcore/mod-ah-bot.git",
+      "branch": "master",
+      "commit": "c11d8318cbd8714a9980f9464f78e07d3d48a70a",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-autobalance": {
+      "url": "https://github.com/azerothcore/mod-autobalance.git",
+      "branch": "master",
+      "commit": "73d4ad3c379fbfc35c63b5b9b44fba1f7d9e213d",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-auto-revive": {
+      "url": "https://github.com/azerothcore/mod-auto-revive.git",
+      "branch": "master",
+      "commit": "ce5ca7a600dbef0dec48dc6da42d374d08d6b728",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-better-item-reloading": {
+      "url": "https://github.com/azerothcore/mod-better-item-reloading.git",
+      "branch": "master",
+      "commit": "24617d0f94d0bc6d24993e4581661af5c7629b5e",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "BGQueueChecker": {
+      "url": "https://github.com/AnchyDev/BGQueueChecker.git",
+      "branch": "master",
+      "commit": "0a6b9872f5d4f50286e5152c0debfeb1d6ef73a0",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-boss-announcer": {
+      "url": "https://github.com/azerothcore/mod-boss-announcer.git",
+      "branch": "master",
+      "commit": "3af6e83e976a9a143ded51f4e8afeb69863fb5ec",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-breaking-news-override": {
+      "url": "https://github.com/azerothcore/mod-breaking-news-override.git",
+      "branch": "master",
+      "commit": "1016344718b1ace3235b00469f0df65d544371db",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-challenge-modes": {
+      "url": "https://github.com/ZhengPeiRu21/mod-challenge-modes.git",
+      "branch": "master",
+      "commit": "1930525b9530d329cb9fe0504a3c9b5b40a12261",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-changeablespawnrates": {
+      "url": "https://github.com/justin-kaufmann/mod-changeablespawnrates.git",
+      "branch": "main",
+      "commit": "c51cd270034d347e767f0ab4c5498693c41109e3",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-playerbots-city-life": {
+      "url": "https://github.com/vrzgames/mod-playerbots-city-life.git",
+      "branch": "main",
+      "commit": "ce6a05df450f04c4961d09254ad73cf11f1afee2",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-dead-means-dead": {
+      "url": "https://github.com/kjack9/mod-dead-means-dead.git",
+      "branch": "main",
+      "commit": "725b14973be28c4acea7d1a892bbe7cfdd2e8a51",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-desertion-warnings": {
+      "url": "https://github.com/azerothcore/mod-desertion-warnings.git",
+      "branch": "master",
+      "commit": "ed1b7e26869d520b7627c289d461fbc5d040be6a",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-duel-reset": {
+      "url": "https://github.com/azerothcore/mod-duel-reset.git",
+      "branch": "master",
+      "commit": "f2c67d4d82b79cefccfc89a4696a428529cf8cfd",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-dungeon-clear": {
+      "url": "https://github.com/jrad7/mod-dungeon-clear.git",
+      "branch": "master",
+      "commit": "60f3d98b83143714041df4120abd45f0e3c3ebd7",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-dynamic-loot-rates": {
+      "url": "https://github.com/hallgaeuer/mod-dynamic-loot-rates.git",
+      "branch": "master",
+      "commit": "41ffb6a7c5bc78d1c062b8237a9a185892514a32",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-dynamic-xp": {
+      "url": "https://github.com/azerothcore/mod-dynamic-xp.git",
+      "branch": "master",
+      "commit": "06d5d370aa7d8d8644ed241f03a986e28195c2f4",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-emblem-transfer": {
+      "url": "https://github.com/azerothcore/mod-emblem-transfer.git",
+      "branch": "master",
+      "commit": "feb2007a50c77680bd6d15aaaf45e8a185dad7cf",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-fireworks-on-level": {
+      "url": "https://github.com/azerothcore/mod-fireworks-on-level.git",
+      "branch": "master",
+      "commit": "e5c58542996e0f1ad3410ebdb7cff9ed9d52e3d6",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-fly-anywhere": {
+      "url": "https://github.com/abracadaniel22/mod-fly-anywhere.git",
+      "branch": "main",
+      "commit": "141b789f9b9c99ebf0c5391df9dafb825f967f9a",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-guildhouse": {
+      "url": "https://github.com/azerothcore/mod-guildhouse.git",
+      "branch": "master",
+      "commit": "0b3cc14e947a859f8a7751a10676107d6316275b",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-improved-bank": {
+      "url": "https://github.com/silviu20092/mod-improved-bank.git",
+      "branch": "master",
+      "commit": "89fc606fe6945f201f15f8a3bbc61d01552ea94c",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-individual-progression": {
+      "url": "https://github.com/ZhengPeiRu21/mod-individual-progression.git",
+      "branch": "master",
+      "commit": "60336b349cce2bc209d154bb840f2370f1cc16f2",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-individual-xp": {
+      "url": "https://github.com/azerothcore/mod-individual-xp.git",
+      "branch": "master",
+      "commit": "503471f766bc4f21dca0aa05e6a9d3d40718a780",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-instance-reset": {
+      "url": "https://github.com/azerothcore/mod-instance-reset.git",
+      "branch": "master",
+      "commit": "1e2c20770f40f5382348b7649291371f47c86812",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-junk-to-gold": {
+      "url": "https://github.com/noisiver/mod-junk-to-gold.git",
+      "branch": "master",
+      "commit": "2134690bb03899e5c9e44d0682e8e6abf0bbbaf2",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-learn-spells": {
+      "url": "https://github.com/azerothcore/mod-learn-spells.git",
+      "branch": "master",
+      "commit": "016b92d520f343d074ffd5d46016a94f4a3a6ebd",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-low-level-rbg": {
+      "url": "https://github.com/azerothcore/mod-low-level-rbg.git",
+      "branch": "master",
+      "commit": "dcb8989b0635fb6de0477818de2579de1930267f",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-morphsummon": {
+      "url": "https://github.com/azerothcore/mod-morphsummon.git",
+      "branch": "master",
+      "commit": "b1fc9db72b5acbdd30639a131fe84da53c82d8f2",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-multibot-bridge": {
+      "url": "https://github.com/Wishmaster117/mod-multibot-bridge.git",
+      "branch": "main",
+      "commit": "1da05982e478cb00e0b6c87314afe7e0e9653ffb",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-npc-beastmaster": {
+      "url": "https://github.com/azerothcore/mod-npc-beastmaster.git",
+      "branch": "master",
+      "commit": "99dbd9b73f63c39b0773c575bea7a8add8049ccf",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-npc-buffer": {
+      "url": "https://github.com/azerothcore/mod-npc-buffer.git",
+      "branch": "master",
+      "commit": "532a6ba80c31b673338fcdb747cb2226bec4887e",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-npc-enchanter": {
+      "url": "https://github.com/azerothcore/mod-npc-enchanter.git",
+      "branch": "master",
+      "commit": "af32add66eafc0e0eb8775999e76ceed75f18b74",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-npc-spectator": {
+      "url": "https://github.com/Gozzim/mod-npc-spectator.git",
+      "branch": "master",
+      "commit": "8c9683a2bd8dcb901cc5338342376b15df9e244b",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-npc-talent-template": {
+      "url": "https://github.com/azerothcore/mod-npc-talent-template.git",
+      "branch": "master",
+      "commit": "d536079191e6ecabb18273b3e46f7583ad19e355",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-phased-duels": {
+      "url": "https://github.com/azerothcore/mod-phased-duels.git",
+      "branch": "master",
+      "commit": "8f122d9c6fb5fc895a232cbc05b30b72ebc455b2",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-player-bot-guildhouse": {
+      "url": "https://github.com/DustinHendrickson/mod-player-bot-guildhouse.git",
+      "branch": "main",
+      "commit": "1d4d649982a523b674321f6ca4c23d11e60c1b7b",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-playerbots": {
+      "url": "https://github.com/liyunfan1223/mod-playerbots.git",
+      "branch": "master",
+      "commit": "037c01418b5d01506917a3db9b44fd56ac5f965c",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-pvp-titles": {
+      "url": "https://github.com/azerothcore/mod-pvp-titles.git",
+      "branch": "master",
+      "commit": "2c7c16a4ff504cb43d60919552581833d7efcb05",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-queue-list-cache": {
+      "url": "https://github.com/azerothcore/mod-queue-list-cache.git",
+      "branch": "main",
+      "commit": "27279f247af0c932962f512d3fc261aefb8dc195",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-quick-teleport": {
+      "url": "https://github.com/azerothcore/mod-quick-teleport.git",
+      "branch": "master",
+      "commit": "3a88ac0f294f7ce21441fb3cb3de13f87c9683eb",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-racial-trait-swap": {
+      "url": "https://github.com/azerothcore/mod-racial-trait-swap.git",
+      "branch": "main",
+      "commit": "8ae1e6fab13b4660eed76aca8fce998a18343048",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-rdf-expansion": {
+      "url": "https://github.com/azerothcore/mod-rdf-expansion.git",
+      "branch": "master",
+      "commit": "c7a91c5973cda4529495b52b89375913f98726d6",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-reagent-bank": {
+      "url": "https://github.com/ZhengPeiRu21/mod-reagent-bank.git",
+      "branch": "master",
+      "commit": "62c265338ceba10fb754394413e6c4c61cedf9de",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-reward-played-time": {
+      "url": "https://github.com/azerothcore/mod-reward-played-time.git",
+      "branch": "master",
+      "commit": "0a22f9904878e909287daa9c22deeedc7dc5ff24",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-solo-lfg": {
+      "url": "https://github.com/azerothcore/mod-solo-lfg.git",
+      "branch": "master",
+      "commit": "3821fe1d108ade8d2b7ad6611e41154e05864c65",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-TimeIsTime": {
+      "url": "https://github.com/dunjeon/mod-TimeIsTime.git",
+      "branch": "master",
+      "commit": "abfb3a7a031c168c481642604c1389a5d92f4499",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-top-arena": {
+      "url": "https://github.com/azerothcore/mod-top-arena.git",
+      "branch": "master",
+      "commit": "0cef3e349c93d95ef6fc9f9ffa45772a4f338257",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-transmog": {
+      "url": "https://github.com/azerothcore/mod-transmog.git",
+      "branch": "master",
+      "commit": "0d85cbc53d63ce2df8527169ce6ae47f5f6f6ba8",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod_weather_vibe": {
+      "url": "https://github.com/hermensbas/mod_weather_vibe.git",
+      "branch": "main",
+      "commit": "cb854eb96ef9fa7fa4fd1f6e2d3340fcadb945e8",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-who-logged": {
+      "url": "https://github.com/azerothcore/mod-who-logged.git",
+      "branch": "master",
+      "commit": "3f439d0aa56d3a4782dee1467f1bdcb16b35aa2f",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-account-mounts": {
+      "url": "https://github.com/azerothcore/mod-account-mounts.git",
+      "branch": "master",
+      "commit": "0a3b4c4cc084ebbbb7e7e07f88222a08a70b0dde",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-war-effort": {
+      "url": "https://github.com/azerothcore/mod-war-effort.git",
+      "branch": "master",
+      "commit": "512a2dd97e6589482148ed870dc67e7292a8c5ac",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-aoe-loot": {
+      "url": "https://github.com/TerraByte-tbwps/mod-aoe-loot.git",
+      "branch": "main",
+      "commit": "be4f06af8e1b455cc31a227f12e2d0a741c799e0",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-cfbg": {
+      "url": "https://github.com/azerothcore/mod-cfbg.git",
+      "branch": "master",
+      "commit": "78771c6d0d9d5fcd80206eaeb9668452adcbf4ee",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-leech": {
+      "url": "https://github.com/ZhengPeiRu21/mod-leech.git",
+      "branch": "master",
+      "commit": "da779951a82d909fa2202360c015af84c4f8ec41",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-money-for-kills": {
+      "url": "https://github.com/azerothcore/mod-money-for-kills.git",
+      "branch": "master",
+      "commit": "cd365d91bf20f0c9044298e6f85cbf8f4373bf51",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-no-hearthstone-cooldown": {
+      "url": "https://github.com/BytesGalore/mod-no-hearthstone-cooldown.git",
+      "branch": "main",
+      "commit": "832ef5e6d7268876112be65202ee8e60d287a936",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-npc-free-professions": {
+      "url": "https://github.com/azerothcore/mod-npc-free-professions.git",
+      "branch": "master",
+      "commit": "01d8624f9c0789550c0b04b23c54928b054619ce",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-ollama-chat": {
+      "url": "https://github.com/DustinHendrickson/mod-ollama-chat.git",
+      "branch": "main",
+      "commit": "a9966f3e6b20efb98aab8b56ff9d997d8e1bcc06",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-player-bot-level-brackets": {
+      "url": "https://github.com/DustinHendrickson/mod-player-bot-level-brackets.git",
+      "branch": "main",
+      "commit": "a94f9c6458bf6264164436a53ddd4e5c3ed44fdb",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-pvp-zones": {
+      "url": "https://github.com/azerothcore/mod-pvp-zones.git",
+      "branch": "master",
+      "commit": "14f6eddcec993fa7a7af05b2ccdb069ed20339c9",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-random-enchants": {
+      "url": "https://github.com/azerothcore/mod-random-enchants.git",
+      "branch": "master",
+      "commit": "6d49d64918f1e798490d0139038a33194fd294df",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-server-auto-shutdown": {
+      "url": "https://github.com/azerothcore/mod-server-auto-shutdown.git",
+      "branch": "master",
+      "commit": "625b145109553ed56ec2b2d36d6e7b06fee43520",
+      "resolved": true,
+      "refresh_ok": true
+    },
+    "mod-skip-dk-starting-area": {
+      "url": "https://github.com/azerothcore/mod-skip-dk-starting-area.git",
+      "branch": "master",
+      "commit": "cd0bac42056cc469399487269acbb96264ff813e",
+      "resolved": true,
+      "refresh_ok": true
+    }
+  }
+}
