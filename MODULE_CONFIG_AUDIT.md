@@ -29,7 +29,7 @@ The core template is outside the build-repository module map and must be changed
 | `DBC.EnforceItemAttributes` | `1` | `0` | Pinned Individual Progression README |
 | `ActivateWeather` | `1` | `0` | Pinned Weather Vibe README |
 
-The zero-context patch passed `git apply --check --unidiff-zero` against core SHA `f19a18799a35f7c24bdcdc9ea399c601f166259b`; the current pinned file has not been modified. Commit the patch to `alterational/azerothcore-wotlk` on `Playerbot`, then update the core SHA in the build-repository manifest, lock, validator, config maps, and docs. While `config/core-worldserver-defaults.json` remains pending, the workflow may compile for compatibility testing but withholds packaging and artifact upload.
+The zero-context patch passed `git apply --check --unidiff-zero` against core SHA `f19a18799a35f7c24bdcdc9ea399c601f166259b`; the current pinned file has not been modified. Commit the patch to `alterational/azerothcore-wotlk` on `Playerbot`, then update the core SHA in the build-repository manifest, lock, validator, config maps, and docs. While `config/core-worldserver-defaults.json` remains pending, the Windows workflow must stop at the pre-build `--require-target` gate; compilation and packaging are blocked.
 
 ## Master switches
 

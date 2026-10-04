@@ -47,9 +47,9 @@ jobs:
           python scripts/materialize.py
           python scripts/validate_project.py --check-checkout
 
-      - name: Check pinned core config state
+      - name: Require pinned core config defaults before build
         shell: pwsh
-        run: python scripts/check_core_defaults.py
+        run: python scripts/check_core_defaults.py --require-target
 
       - name: Apply and check tracked module templates
         shell: pwsh
@@ -168,7 +168,7 @@ jobs:
         if: failure() && steps.windows-build.outcome == 'failure'
         shell: pwsh
         run: |
-          $log = Join-Path $env:GITHUB_WORKSPACE 'core\\windows-build.log'
+          $log = Join-Path (Join-Path $env:GITHUB_WORKSPACE 'core') 'windows-build.log'
           if (-not (Test-Path $log)) { Write-Output 'Build log was not created.'; exit 0 }
           $errors = Select-String -Path $log -Pattern 'error C[0-9]+|fatal error|error:|CMake Error|FAILED:|ninja: build stopped' | Select-Object -Last 30
           $tail = Get-Content -LiteralPath $log -Tail 80
