@@ -4,7 +4,7 @@
   "source_thread": "https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-general-releases/1040387-azerothcore-wotlk-repack-playerbots-individual-progression-32-other-modules.html",
   "extracted_at": "2026-10-04",
   "core": {
-    "repository": "https://github.com/mod-playerbots/azerothcore-wotlk.git",
+    "repository": "https://github.com/alterational/azerothcore-wotlk.git",
     "branch": "Playerbot",
     "candidate_commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
     "source": "user-provided",

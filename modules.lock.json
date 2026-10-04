@@ -3,7 +3,7 @@
   "resolved_at": "2026-10-04",
   "resolution_method": "git ls-remote --symref; commit pins are candidate remote tips, not compile-tested",
   "core": {
-    "url": "https://github.com/mod-playerbots/azerothcore-wotlk.git",
+    "url": "https://github.com/alterational/azerothcore-wotlk.git",
     "branch": "Playerbot",
     "commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
     "resolved": true,

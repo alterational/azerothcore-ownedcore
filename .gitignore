@@ -2,6 +2,7 @@
 /core/
 
 # CMake and server build/output products.
+/runtime-package/
 /build/
 /bin/
 /lib/

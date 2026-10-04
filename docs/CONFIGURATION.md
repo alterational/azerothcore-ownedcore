@@ -1,41 +1,62 @@
-# Runtime module enablement
+# Runtime module and server configuration
 
-`modules.manifest.json` is the target state: 52 module sources enabled, 14 initially disabled. All 66 remain installed in `core/modules`; runtime-off does not omit a source from CMake or the build. Upstream `.conf.dist` defaults can differ from the manifest.
+`modules.manifest.json` is the module target state: 52 sources enabled and 14 initially disabled. All 66 remain installed in `core/modules`; runtime-off does not omit a source from CMake or the build.
 
-## Audited map and load path
+## Audited module maps
 
-`config/module-switches.json` is the reviewed 66-module mapping. It contains 48 source-verified master switches, two approved upstream-default policies (City Life and Dungeon Clear), and 16 documented cases with no effective module-wide switch. Each switch was checked in its pinned `.conf.dist` and referenced by pinned C++ source. Subfeature toggles are deliberately not changed. See [`MODULE_CONFIG_AUDIT.md`](../MODULE_CONFIG_AUDIT.md) for the complete key/default/target/code-reference table.
+`config/module-switches.json` is the reviewed 66-module master-switch map: 48 source-verified switches, two approved upstream-default policies (City Life and Dungeon Clear), and 16 documented modules without an effective module-wide switch. It sets `Dynamic.XP.Rate = 1` for enabled Dynamic XP. See [`MODULE_CONFIG_AUDIT.md`](../MODULE_CONFIG_AUDIT.md) for the full table.
 
-The pinned core loads module settings from active `.conf` files, not an arbitrary overlay fragment: `core/modules/CMakeLists.txt` constructs `CONFIG_FILE_LIST` from each module’s `conf/*.conf.dist`; `worldserver` passes it to `ConfigMgr::Configure` in `core/src/server/apps/worldserver/Main.cpp`; `ConfigMgr::LoadModulesConfigs` reads the selected names from `<CONF_DIR>/modules/`. The pinned `acore.sh compiler all` install path installs the templates under `env/dist/etc/modules` and, by default (`AC_ENABLE_CONF_COPY_ON_INSTALL=1`), copies missing `.conf.dist` files to active `.conf` files.
+`config/additional-module-settings.json` records two additional module settings:
 
-## Prepare module defaults before compilation
+- `RDF.Expansion = 2`: checked against the pinned template and source; this already is the upstream Wrath-of-the-Lich-King default and is not overridden.
+- `TimeIsTime.SpeedRate = 15.0`: changes the pinned `1.0` default so one in-game day takes 96 real minutes, as requested from the OwnedCore post.
 
-AzerothCore does not keep all module switches in one `worldserver.conf.dist`. Each module has its own `conf/<name>.conf.dist` under `core/modules/<module-id>/`; the core installs active files under `env/dist/etc/modules/` and loads them from there. After fetching sources and before the first build, run from the repository root:
+Apply/check module templates after materializing sources and before compilation:
 
 ```bash
 python3 scripts/apply_module_config.py --apply --source-templates
+python3 scripts/apply_additional_settings.py --apply --source-templates
 python3 scripts/apply_module_config.py --check --source-templates
+python3 scripts/apply_additional_settings.py --check --source-templates
 ```
 
-This patches only the audited master assignments in the generated, ignored `core/modules/*/conf/*.conf.dist` source tree. It preserves all other module defaults, is idempotent, and writes atomically. It does not change files in `worldserver.conf.dist`, invented keys, or subfeature switches. City Life and Dungeon Clear remain at their upstream `1` defaults. Re-run after every fresh materialization; the script and reviewed mapping are the reproducible record of the edits.
+Both applicators use only tracked maps, preserve unrelated defaults, fail closed on unexpected values, and write atomically. City Life remains enabled at `CityLife.Enable = 1`; Dungeon Clear remains enabled at `DungeonClear.Enable = 1`. No SQL is run.
 
-## Apply after build/install
+## Core worldserver defaults belong in the core fork
 
-Fresh installs copy template values into active runtime configs. If active configs already exist, or you want a final verification after install, run from the repository root:
+The core configuration lives at `src/server/apps/worldserver/worldserver.conf.dist`. Its pinned SHA currently has these upstream values:
+
+| Setting | Current pinned value | Required value | Reason |
+|---|---:|---:|---|
+| `MapUpdate.Threads` | `1` | `4` | OwnedCore thread recommendation |
+| `EnablePlayerSettings` | `0` | `1` | Required by pinned Individual Progression and Challenge Modes READMEs |
+| `DBC.EnforceItemAttributes` | `1` | `0` | Required by pinned Individual Progression README |
+| `ActivateWeather` | `1` | `0` | Required by pinned Weather Vibe README |
+
+The exact core patch is [`patches/azerothcore-worldserver-defaults.patch`](../patches/azerothcore-worldserver-defaults.patch). It must be applied and committed to `alterational/azerothcore-wotlk` on `Playerbot`. The ignored generated core checkout has not been edited. `config/core-worldserver-defaults.json` records the pending state; `scripts/check_core_defaults.py` verifies the current pin and, after the fork commit and core-SHA update, requires the target values. The Windows workflow uses `--require-target` and will not build/package the stale core pin.
+
+The RDF expansion and Dynamic XP requests preserve pinned defaults; the only module-template value changed beyond master switches is TimeIsTime's speed rate. Do not adjust other upstream defaults.
+
+## How AzerothCore loads module configs
+
+The pinned core builds active module config names from `core/modules/CMakeLists.txt`; `worldserver` passes them to `ConfigMgr::Configure`, and `ConfigMgr::LoadModulesConfigs` reads them from `<CONF_DIR>/modules/`. `acore.sh compiler all` installs the `.conf.dist` files under `env/dist/etc/modules` and copies missing `.conf` runtime files on Linux with the default `AC_ENABLE_CONF_COPY_ON_INSTALL=1`.
+
+After a successful build/install, apply/check runtime configs from the build-repository root:
 
 ```bash
 python3 scripts/apply_module_config.py --apply
+python3 scripts/apply_additional_settings.py --apply
+python3 scripts/check_core_defaults.py --runtime --require-target
 python3 scripts/apply_module_config.py --check
+python3 scripts/apply_additional_settings.py --check
 ```
 
-The default active config directory is `core/env/dist/etc` (with module configs under `modules/`). If the build uses a custom `CONFDIR`, pass it explicitly, for example `python3 scripts/apply_module_config.py --apply --config-dir /srv/azerothcore/etc`. The runtime mode preflights the audited template and active values, patches only mapped master assignments in active `.conf` files, preserves unrelated content, is idempotent, and writes changes atomically. `--check` does not write anything.
+The default active directory is `core/env/dist/etc`; pass `--config-dir <path>` when using a custom `CONFDIR`. Runtime applicators patch only their reviewed assignments and preserve unrelated settings. Missing files or changed upstream values fail instead of being silently guessed.
 
-If the active `.conf` files are absent, follow the pinned core compiler/install procedure or copy each matching `.conf.dist` to `.conf` in the active `modules/` directory, then run the script. A missing/duplicate setting, unexpected pinned template default, or incorrect City Life/Dungeon Clear value fails closed. The actual `env/dist/etc` runtime files are not present until the core is built/installed; this checkout has not applied changes to a live runtime directory.
+## Decisions and limits
 
-## Decisions and limitations
-
-- `BGQueueChecker.Enable`, `BreakingNews.Enable`, and `PvPTitles.Enable` ship at `0` but are set to `1` for intended-enabled modules. Twelve initially-disabled modules ship at `1` and are set to `0`; two more already default to `0`. The exact mapping is in the audit.
-- **Dungeon Clear stays enabled** at `DungeonClear.Enable = 1`, with no override. **City Life stays enabled** at `CityLife.Enable = 1`, with no override.
-- Modules with no master switch are still compiled; the map records them instead of inventing a key. AHBot’s separate seller/buyer role toggles remain at their upstream `0` defaults. `ReagentBank.Enable` appears in the template but is not read by pinned module C++ and is not treated as an operative master switch.
-- Some modules require settings in core `worldserver.conf`, client files, services, or game setup. Those are separate from the module-master overlay and must be reviewed before operating a server: City Life and Playerbots, Individual Progression/Challenge Modes Player Settings, Weather Vibe weather control, Fly Anywhere client/server DBC, and optional Ollama service. See [`SQL_SETUP.md`](SQL_SETUP.md) and the pinned module READMEs.
-- No credentials or server-specific `.conf` files belong in Git; the runtime paths are ignored.
+- All 66 module sources are compiled even when their runtime master switch is set to `0`.
+- **Dungeon Clear stays enabled** at `DungeonClear.Enable = 1`; its duplicate disabled entry was stale. **City Life stays enabled** at its pinned default `CityLife.Enable = 1`.
+- Modules with no master switch are documented instead of receiving invented keys. AHBot seller/buyer toggles stay at their upstream `0` defaults.
+- Other prerequisites and setup are described in the pinned module READMEs and [`SQL_SETUP.md`](SQL_SETUP.md). They do not justify changing unspecified config defaults.
+- No credentials or server-specific active `.conf` files belong in Git. No database or SQL operation is performed by these scripts.

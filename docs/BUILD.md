@@ -1,36 +1,78 @@
 # Build and Codespaces
 
-## What the fast CI does
+## What validation does
 
-`.github/workflows/validate.yml` runs on pushes and pull requests targeting `main` (and can be dispatched manually). It verifies manifest/lock consistency, the pinned source-state decisions and config-map shape, Python syntax, and JSON syntax. It does **not** fetch sources, compile AzerothCore, start a server, validate a database, require game data, or prove runtime behavior.
+`.github/workflows/validate.yml` checks manifest/lock consistency, the module switch map, tracked additional/core-default maps, Python syntax, and JSON syntax. It does not fetch sources, compile, start a server, validate a database, or require client data.
 
-On Codespaces creation, the dev container validates metadata, downloads the approximately 1.5 GB pinned core/module source tree, and applies/checks the audited `.conf.dist` switches. It does **not** install system dependencies, compile, start a server, or apply SQL. An already-created Codespace does not rerun `postCreateCommand`; if it was created before this behavior was added, run the preparation commands manually below or rebuild the container.
+The Codespaces `postCreateCommand` validates and materializes the pinned core plus all 66 modules, validates every checkout against the lock, applies/checks the tracked module switches and additional module settings, then checks the pinned core config state. It does not install system dependencies, compile, start a server, or apply SQL. At the current core SHA, that final check explicitly reports that the four required core defaults are pending in the personal core fork. An already-created Codespace does not rerun `postCreateCommand`; pull the build-repository branch and run the preparation commands below or rebuild the container.
 
-## Build on demand
+## Required core-fork change before building
 
-Use a Codespace or Linux machine with ample disk, RAM, and CPU. From the repository root:
+The current core SHA still has the original values for `MapUpdate.Threads`, `EnablePlayerSettings`, `DBC.EnforceItemAttributes`, and `ActivateWeather`. The required changes belong in the history of `alterational/azerothcore-wotlk` on `Playerbot`, not as local modifications to the ignored `core/` checkout in this repository.
+
+From the build repository's materialized `core/` checkout, after fetching the current personal `Playerbot` branch:
+
+```bash
+cd core
+git fetch origin refs/heads/Playerbot:refs/remotes/origin/Playerbot
+git switch --track -c Playerbot origin/Playerbot
+git apply --check --unidiff-zero ../patches/azerothcore-worldserver-defaults.patch
+git apply --unidiff-zero ../patches/azerothcore-worldserver-defaults.patch
+grep -n -E '^(MapUpdate\.Threads|EnablePlayerSettings|DBC\.EnforceItemAttributes|ActivateWeather) =' src/server/apps/worldserver/worldserver.conf.dist
+git add src/server/apps/worldserver/worldserver.conf.dist
+git commit -m "Set OwnedCore worldserver defaults"
+git push origin HEAD:Playerbot
+git rev-parse HEAD
+```
+
+Record the resulting 40-character SHA. Update only these core fields in the build repository: `modules.manifest.json` → `core.candidate_commit`; `modules.lock.json` → `core.commit`; `scripts/validate_project.py` → `EXPECTED_CORE_SHA` (leave `PENDING_CORE_SHA` at the old SHA); `config/module-switches.json` and `config/additional-module-settings.json` → `core_commit`; and `config/core-worldserver-defaults.json` → the new `core_commit` plus status `pinned_in_core_fork`. Update the core SHA in `README.md`, `MODULE_CONFIG_AUDIT.md`, and `CHECKOUT_REPORT.md` too. Do not change any module pin or run `scripts/refresh_lock.py`. Until the new pin and maps are updated, `python3 scripts/check_core_defaults.py --require-target` fails; the Windows workflow may compile for compatibility testing, but it skips packaging, artifact upload, and release publication.
+
+> The agent cannot push a commit to `Playerbot` under the session's branch restriction. The zero-context patch is included and was verified with `git apply --check --unidiff-zero` against the current pinned file; the user must apply and commit it to the personal core fork, then provide/update the resulting SHA.
+
+## Linux/Codespaces build
+
+Use the user's Codespace (4 cores, 16 GB RAM) or a comparable Linux machine. From the build-repository root, prepare and verify the exact pinned sources and tracked module defaults:
 
 ```bash
 python3 scripts/validate_project.py
 python3 scripts/materialize.py
+python3 scripts/validate_project.py --check-checkout
 python3 scripts/apply_module_config.py --apply --source-templates
+python3 scripts/apply_additional_settings.py --apply --source-templates
 python3 scripts/apply_module_config.py --check --source-templates
-cd core
-./acore.sh install-deps
-./acore.sh compiler all
-cd ..
-python3 scripts/apply_module_config.py --apply
-python3 scripts/apply_module_config.py --check
+python3 scripts/apply_additional_settings.py --check --source-templates
+python3 scripts/check_core_defaults.py --require-target
 ```
 
-The exact `install-deps` and `compiler all` command names were checked against the pinned `acore.sh`; `compiler all` maps to clean, configure, and compile, and the pinned core CI script calls the same command. These commands are **source-verified, not build-verified** in this project until a full successful compile is recorded in `CHECKOUT_REPORT.md`. The available sandbox has limited RAM/CPU; assess resources before compiling. The pinned compiler defaults to `nproc + 2` build jobs; set `MTHREADS=1` in the environment if you intentionally need to reduce parallelism, with the expected longer build time.
+After the core-fork commit has been pinned and the last command passes, build with the requested commands:
 
-Pinned READMEs for AutoBalance, CrossFaction Battleground, and NPC Spectator each cite a minimum AzerothCore revision. Their compatibility with this Playerbots fork's ancestry has not been independently established; preserve the locked SHAs and treat a full compile/runtime review as the compatibility check.
+```bash
+cd core
+./acore.sh install-deps
+MTHREADS=4 ./acore.sh compiler all
+cd ..
+```
 
-`materialize.py` creates shallow Git checkouts for the locked core and every module with `install: true`, including the 14 initially disabled modules. It does not install dependencies, build, apply the config policy, or apply SQL. Run `apply_module_config.py --apply --source-templates` before the build to set audited switches in the generated modules' `.conf.dist` templates. The pinned core installs active `.conf` files under `core/env/dist/etc/modules`; default `--apply`/`--check` operates on those after install. Pass `--config-dir <path>` if the build uses a custom `CONFDIR`.
+After install, apply and check runtime settings:
 
-The build alone does not apply City Life's manual SQL. Automatic module migrations may run later when a server connects to databases; see [SQL_SETUP.md](SQL_SETUP.md) and review backups/authorization before server startup. Runtime module switch handling is separate; see [CONFIGURATION.md](CONFIGURATION.md).
+```bash
+python3 scripts/apply_module_config.py --apply
+python3 scripts/apply_additional_settings.py --apply
+python3 scripts/check_core_defaults.py --runtime --require-target
+python3 scripts/apply_module_config.py --check
+python3 scripts/apply_additional_settings.py --check
+```
 
-## Current verification status
+`compiler all` means clean, configure, compile, and install in the pinned `acore.sh`. These exact commands have not yet been run in the user Codespace; Codespaces API access from the agent returned HTTP 403, and the agent must not create or launch one. Record the exact exit codes and results in `CHECKOUT_REPORT.md`; do not claim a build passed until observed.
 
-The full source checkout was materialized at all locked SHAs and validated, but the full build was not run due to the sandbox's limited resources. No manual compile workflow is present. Do not report a successful build until a real pinned-set compile succeeds. Record the exact command, exit code, and useful output in `CHECKOUT_REPORT.md`. No database credentials or game client data should be added to Actions.
+`materialize.py` creates shallow Git checkouts of the locked core and every module with `install: true`, including all 14 initially disabled modules. It does not refresh pins, apply SQL, or prove compatibility. The two module-config commands run before compilation to make the generated `.conf.dist` templates match the tracked policy. Runtime mode operates under `core/env/dist/etc` after install; pass `--config-dir <path>` if using a custom `CONFDIR`.
+
+Some module READMEs cite minimum core revisions. Keep the locked SHAs unchanged and treat the full compile/runtime review as the compatibility check. The build alone does not apply City Life's manual SQL. Read [`SQL_SETUP.md`](SQL_SETUP.md) and review backups and authorization before any server startup/database updater.
+
+## Windows build and publication
+
+`.github/workflows/windows-release.yml` uses the pinned core's Windows dependency/build approach, materializes all lockfile sources, applies the same module config maps, builds with MSVC on `windows-latest`, checks installed runtime configs, and packages Windows server binaries plus sanitized `.conf.dist` templates. The package script blanks database connection strings and password/token/key settings and excludes active `.conf` files, game/client data, maps, SQL, and dumps.
+
+The workflow runs on pull requests, `workflow_dispatch`, and `v*` tags. It can build the pinned source set while the core-fork config commit is pending to test code compatibility, but its publication gate skips packaging and artifact upload until the core map is `pinned_in_core_fork` and the required values check out. A GitHub Release is published only for a version tag, only after that final Windows build/package succeeds. No Windows build or release result is claimed until Actions reports it.
+
+The release artifact does not include game/client data, maps, vmaps, mmaps, database dumps, credentials, secrets, or active server-specific configuration. It is not a ready-to-run game server distribution; local database settings and the separately sourced client data are required.

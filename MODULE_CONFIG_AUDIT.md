@@ -6,7 +6,30 @@ This audit is generated from the 2026-10-04 materialized source checkouts at the
 
 The pinned core builds `CONFIG_FILE_LIST` from each selected module’s `conf/*.conf.dist` in `core/modules/CMakeLists.txt`. `worldserver` passes this list to `ConfigMgr::Configure` in `core/src/server/apps/worldserver/Main.cpp`, calls `LoadModulesConfigs`, and the pinned `ConfigMgr::LoadModulesConfigs` reads each named file from `GetConfigPath()/modules/`. The `acore.sh compiler` install path copies the templates to the configured runtime directory and, when `AC_ENABLE_CONF_COPY_ON_INSTALL` is enabled (default `1`), copies missing `.conf.dist` files to active `.conf` files. Therefore the overlay patches the loaded `.conf` files directly; it is not an unreferenced fragment.
 
-`config/module-switches.json` records the template, active filename, default, key, and a source-code reference for every master switch. `scripts/apply_module_config.py --apply` applies only these key values; `--check` is read-only. The actual generated runtime configs were not created by a full build in this checkout, so application to a real `env/dist/etc/modules` directory remains pending.
+`config/module-switches.json` records the template, active filename, default, key, and a source-code reference for every master switch. `scripts/apply_module_config.py --apply` applies only these key values; `--check` is read-only. `config/additional-module-settings.json` and `scripts/apply_additional_settings.py` track the reviewed RDF and TimeIsTime values separately. The actual generated runtime configs were not created by a full build in this checkout, so application to a real `env/dist/etc/modules` directory remains pending.
+
+## Additional requested settings
+
+| Setting | Pinned default | Target | Applied by | Finding |
+|---|---:|---:|---|---|
+| `RDF.Expansion` | `2` | `2` | Additional-settings checker | Already the pinned Wrath default; no change |
+| `Dynamic.XP.Rate` | `1` | `1` | Master-switch map | OwnedCore default and enabled-module target; no value change |
+| `TimeIsTime.SpeedRate` | `1.0` | `15.0` | Additional-settings applicator | One in-game day per 96 real minutes; changed in the generated source template |
+
+The OwnedCore settings were checked against the thread's [page 61](https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-general-releases/1040387-azerothcore-wotlk-repack-playerbots-individual-progression-32-other-modules-61.html) and [page 88](https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-general-releases/1040387-azerothcore-wotlk-repack-playerbots-individual-progression-32-other-modules-88.html). The pinned module templates/source confirm `RDF.Expansion = 2`, `Dynamic.XP.Rate = 1`, and `TimeIsTime.SpeedRate = 1.0` before application.
+
+## Core worldserver defaults (pending personal-fork commit)
+
+The core template is outside the build-repository module map and must be changed in the user's personal core fork. `patches/azerothcore-worldserver-defaults.patch` changes only the following reviewed keys:
+
+| Setting | Pinned core default | Requested value | Evidence |
+|---|---:|---:|---|
+| `MapUpdate.Threads` | `1` | `4` | OwnedCore page 61 |
+| `EnablePlayerSettings` | `0` | `1` | Pinned Individual Progression and Challenge Modes READMEs |
+| `DBC.EnforceItemAttributes` | `1` | `0` | Pinned Individual Progression README |
+| `ActivateWeather` | `1` | `0` | Pinned Weather Vibe README |
+
+The zero-context patch passed `git apply --check --unidiff-zero` against core SHA `f19a18799a35f7c24bdcdc9ea399c601f166259b`; the current pinned file has not been modified. Commit the patch to `alterational/azerothcore-wotlk` on `Playerbot`, then update the core SHA in the build-repository manifest, lock, validator, config maps, and docs. While `config/core-worldserver-defaults.json` remains pending, the workflow may compile for compatibility testing but withholds packaging and artifact upload.
 
 ## Master switches
 

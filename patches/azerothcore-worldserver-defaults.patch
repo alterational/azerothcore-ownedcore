@@ -1,0 +1,15 @@
+diff --git a/src/server/apps/worldserver/worldserver.conf.dist b/src/server/apps/worldserver/worldserver.conf.dist
+--- a/src/server/apps/worldserver/worldserver.conf.dist
++++ b/src/server/apps/worldserver/worldserver.conf.dist
+@@ -1334 +1334 @@
+-MapUpdate.Threads = 1
++MapUpdate.Threads = 4
+@@ -1437 +1437 @@
+-ActivateWeather = 1
++ActivateWeather = 0
+@@ -2118 +2118 @@
+-EnablePlayerSettings = 0
++EnablePlayerSettings = 1
+@@ -2827 +2827 @@
+-DBC.EnforceItemAttributes = 1
++DBC.EnforceItemAttributes = 0

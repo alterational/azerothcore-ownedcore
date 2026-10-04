@@ -1,0 +1,243 @@
+name: Windows runtime build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: windows-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build pinned core and 66 modules (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 360
+    outputs:
+      core_config_ready: ${{ steps.core-readiness.outputs.ready }}
+    env:
+      BOOST_ROOT: C:\local\boost_1_87_0
+      CMAKE_GENERATOR: Ninja
+      CTOOLS_BUILD: all
+      CMODULES: static
+    steps:
+      - name: Check out build repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Enable long Git paths
+        shell: pwsh
+        run: git config --global core.longpaths true
+
+      - name: Validate and materialize every locked source
+        shell: pwsh
+        run: |
+          python scripts/validate_project.py
+          python scripts/materialize.py
+          python scripts/validate_project.py --check-checkout
+
+      - name: Check pinned core config state
+        shell: pwsh
+        run: python scripts/check_core_defaults.py
+
+      - name: Apply and check tracked module templates
+        shell: pwsh
+        run: |
+          python scripts/apply_module_config.py --apply --source-templates
+          python scripts/apply_additional_settings.py --apply --source-templates
+          python scripts/apply_module_config.py --check --source-templates
+          python scripts/apply_additional_settings.py --check --source-templates
+
+      - name: Cache Boost and MySQL client
+        uses: actions/cache@v6
+        with:
+          path: |
+            C:\local\boost_1_87_0
+            C:\tools\mysql\current
+          key: winbuild-deps-boost-1.87.0-mysql-8.4.9
+
+      - name: Configure Windows dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if (-not (Test-Path 'C:\local\boost_1_87_0\boost\version.hpp')) {
+            $boostExe = Join-Path $env:RUNNER_TEMP 'boost.exe'
+            $boostUrl = 'https://downloads.sourceforge.net/project/boost/boost-binaries/1.87.0/boost_1_87_0-msvc-14.3-64.exe'
+            $request = @{
+              Uri = $boostUrl
+              OutFile = $boostExe
+              UserAgent = 'azerothcore-ci'
+              ConnectionTimeoutSeconds = 60
+              OperationTimeoutSeconds = 60
+            }
+            $attempts = 3
+            for ($attempt = 1; $attempt -le $attempts; $attempt++) {
+              try {
+                Invoke-WebRequest @request
+                $sizeMB = (Get-Item $boostExe).Length / 1MB
+                if ($sizeMB -lt 50) { throw "Boost download is only $([int]$sizeMB) MB." }
+                break
+              }
+              catch {
+                Write-Host "Boost download attempt $attempt failed: $($_.Exception.Message)"
+                if ($attempt -eq $attempts) { throw }
+                Start-Sleep -Seconds 15
+              }
+            }
+            $proc = Start-Process -FilePath $boostExe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/DIR=C:\local\boost_1_87_0' -Wait -PassThru
+            if ($proc.ExitCode -ne 0) { throw "Boost installer failed with exit code $($proc.ExitCode)." }
+          }
+          if (-not (Test-Path 'C:\local\boost_1_87_0\lib64-msvc-14.3')) { throw 'Boost MSVC 14.3 libraries are missing.' }
+
+          if (-not (Test-Path 'C:\tools\mysql\current\lib\mysqlclient.lib')) {
+            $mysqlZip = Join-Path $env:RUNNER_TEMP 'mysql.zip'
+            Invoke-WebRequest -Uri 'https://cdn.mysql.com/archives/mysql-8.4/mysql-8.4.9-winx64.zip' -OutFile $mysqlZip -UserAgent 'Mozilla/5.0'
+            $sizeMB = (Get-Item $mysqlZip).Length / 1MB
+            if ($sizeMB -lt 50) { throw "MySQL archive download is only $([int]$sizeMB) MB." }
+            New-Item -ItemType Directory -Force -Path 'C:\tools\mysql' | Out-Null
+            Expand-Archive -Path $mysqlZip -DestinationPath 'C:\tools\mysql' -Force
+            if (Test-Path 'C:\tools\mysql\current') { Remove-Item -Recurse -Force 'C:\tools\mysql\current' }
+            Rename-Item 'C:\tools\mysql\mysql-8.4.9-winx64' 'C:\tools\mysql\current'
+          }
+          if (-not (Test-Path 'C:\tools\mysql\current\lib\mysqlclient.lib')) { throw 'MySQL client import library is missing.' }
+
+          $opensslRoot = @($env:OPENSSL_ROOT_DIR, 'C:\Program Files\OpenSSL', 'C:\Program Files\OpenSSL-Win64') |
+            Where-Object { $_ -and (Test-Path (Join-Path $_ 'include\openssl\opensslv.h')) } |
+            Select-Object -First 1
+          if (-not $opensslRoot) { throw 'No OpenSSL development install found on the runner image.' }
+          if (Test-Path 'C:\openssl') { Remove-Item -Recurse -Force 'C:\openssl' }
+          New-Item -ItemType Junction -Path 'C:\openssl' -Target $opensslRoot | Out-Null
+          "OPENSSL_ROOT_DIR=C:\openssl" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
+            choco install ninja -y --no-progress
+            $chocoBin = Join-Path $env:ChocolateyInstall 'bin'
+            if (Test-Path $chocoBin) {
+              $env:Path = "$chocoBin;$env:Path"
+              $chocoBin | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+            }
+          }
+          if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) { throw 'Ninja is unavailable after installation.' }
+          ninja --version
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+
+      - name: Configure AzerothCore for Windows
+        shell: pwsh
+        run: |
+          @'
+          CCOMPILERC="cl"
+          CCOMPILERCXX="cl"
+          CTYPE="Release"
+          CSCRIPTS="static"
+          CMODULES="static"
+          CTOOLS_BUILD="all"
+          CCUSTOMOPTIONS="-DBOOST_ROOT=C:/local/boost_1_87_0 -DOPENSSL_ROOT_DIR=C:/openssl -DOPENSSL_USE_STATIC_LIBS=FALSE -DCMAKE_RC_COMPILER=rc -DCMAKE_NINJA_FORCE_RESPONSE_FILE=ON -DCMAKE_NINJA_CMCLDEPS_RC=OFF -DCMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS=ON -DCMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS=ON -DCMAKE_C_USE_RESPONSE_FILE_FOR_INCLUDES=ON -DCMAKE_CXX_USE_RESPONSE_FILE_FOR_INCLUDES=ON -DCMAKE_C_USE_RESPONSE_FILE_FOR_LIBRARIES=ON -DCMAKE_CXX_USE_RESPONSE_FILE_FOR_LIBRARIES=ON"
+          '@ | Set-Content -Path 'core/conf/config.sh' -Encoding ascii
+          Get-Content 'core/conf/config.sh'
+
+      - name: Build and install server
+        shell: bash
+        working-directory: core
+        env:
+          MTHREADS: "4"
+          CC: cl
+          CXX: cl
+          RC: rc
+        run: ./acore.sh compiler all
+
+      - name: Create fresh runtime config files
+        shell: pwsh
+        run: |
+          $etc = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist\etc'
+          foreach ($source in Get-ChildItem -LiteralPath $etc -Filter '*.conf.dist' -File) {
+            $active = $source.FullName.Substring(0, $source.FullName.Length - '.dist'.Length)
+            if (-not (Test-Path -LiteralPath $active)) { Copy-Item -LiteralPath $source.FullName -Destination $active }
+          }
+          $moduleDir = Join-Path $etc 'modules'
+          foreach ($source in Get-ChildItem -LiteralPath $moduleDir -Filter '*.conf.dist' -File) {
+            $active = $source.FullName.Substring(0, $source.FullName.Length - '.dist'.Length)
+            if (-not (Test-Path -LiteralPath $active)) { Copy-Item -LiteralPath $source.FullName -Destination $active }
+          }
+
+      - name: Stage Windows runtime DLL dependencies
+        shell: pwsh
+        run: |
+          $dest = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist\bin'
+          $dependencyDirs = @(
+            'C:\tools\mysql\current\bin',
+            'C:\openssl\bin',
+            'C:\local\boost_1_87_0\lib64-msvc-14.3'
+          )
+          foreach ($directory in $dependencyDirs) {
+            if (Test-Path $directory) {
+              Get-ChildItem -LiteralPath $directory -Filter '*.dll' -File | Copy-Item -Destination $dest -Force
+            }
+          }
+
+      - name: Apply and check installed runtime config
+        shell: pwsh
+        run: |
+          python scripts/apply_module_config.py --apply
+          python scripts/apply_additional_settings.py --apply
+          python scripts/apply_module_config.py --check
+          python scripts/apply_additional_settings.py --check
+          python scripts/check_core_defaults.py --runtime
+
+      - name: Record core config readiness for publication
+        id: core-readiness
+        shell: pwsh
+        run: |
+          $settings = Get-Content -Raw 'config/core-worldserver-defaults.json' | ConvertFrom-Json
+          $ready = $settings.status -eq 'pinned_in_core_fork'
+          "ready=$($ready.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Package sanitized Windows runtime
+        if: steps.core-readiness.outputs.ready == 'true'
+        shell: pwsh
+        run: python scripts/package_runtime.py --dist-dir core/env/dist --output runtime-package
+
+      - name: Upload successful Windows runtime artifact
+        if: steps.core-readiness.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: azerothcore-ownedcore-windows
+          path: runtime-package/azerothcore-ownedcore-windows.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish version-tagged Windows release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') && needs.build.outputs.core_config_ready == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download successful Windows runtime artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: azerothcore-ownedcore-windows
+          path: release-assets
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: release-assets/azerothcore-ownedcore-windows.zip

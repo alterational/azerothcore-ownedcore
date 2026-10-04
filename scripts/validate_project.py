@@ -13,10 +13,13 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "modules.manifest.json"
 LOCK_PATH = ROOT / "modules.lock.json"
 SWITCHES_PATH = ROOT / "config" / "module-switches.json"
+ADDITIONAL_SETTINGS_PATH = ROOT / "config" / "additional-module-settings.json"
+CORE_DEFAULTS_PATH = ROOT / "config" / "core-worldserver-defaults.json"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
-EXPECTED_CORE_URL = "https://github.com/mod-playerbots/azerothcore-wotlk.git"
+EXPECTED_CORE_URL = "https://github.com/alterational/azerothcore-wotlk.git"
 EXPECTED_CORE_BRANCH = "Playerbot"
 EXPECTED_CORE_SHA = "f19a18799a35f7c24bdcdc9ea399c601f166259b"
+PENDING_CORE_SHA = "f19a18799a35f7c24bdcdc9ea399c601f166259b"
 EXPECTED_LEARN_SPELLS_URL = "https://github.com/azerothcore/mod-learn-spells.git"
 
 
@@ -133,6 +136,86 @@ def check_config_mapping(manifest: dict, lock: dict) -> tuple[int, int, int]:
     return counts["master_switch"], counts["upstream_default"], counts["no_master_switch"]
 
 
+def check_additional_settings_mapping(manifest: dict, lock: dict) -> int:
+    mapping = load_json(ADDITIONAL_SETTINGS_PATH)
+    if mapping.get("core_commit") != lock["core"].get("commit"):
+        fail("Additional module settings map was audited against a different core commit")
+    entries = mapping.get("settings")
+    if not isinstance(entries, list):
+        fail("config/additional-module-settings.json must contain a settings list")
+
+    modules = {module["id"]: module for module in manifest["modules"]}
+    lock_modules = lock["modules"]
+    by_key: dict[tuple[str, str], dict] = {}
+    for entry in entries:
+        module_id = entry.get("module_id")
+        key = entry.get("key")
+        if module_id not in modules or not isinstance(key, str):
+            fail(f"Invalid additional module settings entry: {entry!r}")
+        module = modules[module_id]
+        if not module.get("install") or not module.get("enabled"):
+            fail(f"{module_id}: additional settings require an installed, enabled module")
+        if entry.get("source_commit") != lock_modules[module_id].get("commit"):
+            fail(f"{module_id}: additional settings source commit differs from lock")
+        for field in ("source_config", "runtime_config", "upstream_default", "target", "evidence"):
+            if not isinstance(entry.get(field), str) or not entry[field]:
+                fail(f"{module_id}:{key}: missing {field}")
+        identity = (module_id, key)
+        if identity in by_key:
+            fail(f"Duplicate additional module setting {module_id}:{key}")
+        by_key[identity] = entry
+
+    expected = {
+        ("mod-rdf-expansion", "RDF.Expansion"): ("2", "2"),
+        ("mod-TimeIsTime", "TimeIsTime.SpeedRate"): ("1.0", "15.0"),
+    }
+    if set(by_key) != set(expected):
+        fail(f"Unexpected additional module settings keys: {sorted(by_key)}")
+    for identity, values in expected.items():
+        entry = by_key[identity]
+        if (entry.get("upstream_default"), entry.get("target")) != values:
+            fail(f"{identity[0]}:{identity[1]} must preserve audited default/target {values}")
+
+    dynamic_xp = load_json(SWITCHES_PATH)["modules"]["mod-dynamic-xp"]["switch"]
+    if not isinstance(dynamic_xp, dict) or dynamic_xp.get("key") != "Dynamic.XP.Rate" or dynamic_xp.get("enabled_value") != "1":
+        fail("Dynamic XP must remain mapped to Dynamic.XP.Rate = 1 by the module master-switch map")
+    return len(entries)
+
+
+def check_core_defaults_mapping(lock: dict) -> str:
+    mapping = load_json(CORE_DEFAULTS_PATH)
+    core_commit = lock["core"].get("commit")
+    if mapping.get("core_commit") != core_commit:
+        fail("Core worldserver defaults map was audited against a different core commit")
+    status = mapping.get("status")
+    if status not in {"pending_core_fork_commit", "pinned_in_core_fork"}:
+        fail(f"Invalid core defaults status: {status!r}")
+    if status == "pending_core_fork_commit" and core_commit != PENDING_CORE_SHA:
+        fail("The old core SHA cannot remain marked pending after the personal-fork config commit")
+    if mapping.get("source_config") != "src/server/apps/worldserver/worldserver.conf.dist":
+        fail("Core defaults map points at an unexpected worldserver template")
+    patch = ROOT / mapping.get("patch_file", "")
+    if not patch.is_file():
+        fail("Core defaults patch file is missing")
+    entries = mapping.get("settings")
+    expected = {
+        "MapUpdate.Threads": ("1", "4"),
+        "EnablePlayerSettings": ("0", "1"),
+        "DBC.EnforceItemAttributes": ("1", "0"),
+        "ActivateWeather": ("1", "0"),
+    }
+    if not isinstance(entries, list) or len(entries) != len(expected):
+        fail("Core worldserver defaults map must contain exactly four reviewed settings")
+    actual = {entry.get("key"): entry for entry in entries if isinstance(entry, dict)}
+    if set(actual) != set(expected):
+        fail(f"Unexpected core defaults keys: {sorted(str(key) for key in actual)}")
+    for key, values in expected.items():
+        entry = actual[key]
+        if (entry.get("upstream_default"), entry.get("target")) != values or not entry.get("evidence"):
+            fail(f"Core default {key} must retain audited upstream/target values {values} and evidence")
+    return status
+
+
 def check() -> tuple[dict, dict]:
     manifest = load_json(MANIFEST_PATH)
     lock = load_json(LOCK_PATH)
@@ -213,6 +296,8 @@ def check() -> tuple[dict, dict]:
         fail("Learn Spells must use the user-approved azerothcore/mod-learn-spells replacement")
 
     master_count, default_count, no_master_count = check_config_mapping(manifest, lock)
+    additional_count = check_additional_settings_mapping(manifest, lock)
+    core_defaults_status = check_core_defaults_mapping(lock)
     print(
         f"Manifest/lock valid: {len(modules)} modules ({enabled_count} enabled, "
         f"{disabled_count} initially disabled); core {core_commit[:12]} and every module have full pinned commits."
@@ -220,6 +305,9 @@ def check() -> tuple[dict, dict]:
     print(
         f"Config mapping valid: {master_count} verified master switches, {default_count} approved upstream defaults, "
         f"{no_master_count} documented no-master-switch cases."
+    )
+    print(
+        f"Additional settings valid: {additional_count} reviewed module defaults; core worldserver config status={core_defaults_status}."
     )
     return manifest, lock
 

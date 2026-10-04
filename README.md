@@ -1,37 +1,40 @@
 # azerothcore-ownedcore
 
-Azerothcore + Playerbots with the same-ish configuration as on the Ownedcore topic.
+A reproducible build workspace for the user's AzerothCore Playerbots fork and the OwnedCore module list, with City Life added. The build repository tracks immutable source pins and reviewed config applicators; materialized source and build output stay out of Git.
 
-A reproducible source workspace for the user-selected AzerothCore Playerbots core and OwnedCore module list, with City Life added. Sources are materialized on demand and kept out of Git; the generated `core/modules` tree is ignored. The current workspace has the pinned sources materialized and module `.conf.dist` defaults configured for compilation.
-
-- **66 unique modules:** 52 enabled and 14 initially disabled. Every module has `install: true`; initially disabled modules are still fetched and built.
+- **66 modules:** 52 intended enabled and 14 initially disabled. Every entry remains `install: true`; disabled modules are still checked out and compiled.
 - [Module inventory and immutable commits](MODULES.md)
 - [Configuration policy and application](docs/CONFIGURATION.md)
 - [SQL and runtime setup](docs/SQL_SETUP.md)
-- [Build and Codespaces instructions](docs/BUILD.md)
+- [Build, Codespaces, and Windows workflow](docs/BUILD.md)
 - [Config audit](MODULE_CONFIG_AUDIT.md) · [checkout/build report](CHECKOUT_REPORT.md)
-- [Destination repository and status](docs/DESTINATION.md)
 - [Manifest](modules.manifest.json) · [lockfile](modules.lock.json)
 
 ## Source pins
 
-The core is `mod-playerbots/azerothcore-wotlk`, branch `Playerbot`, commit `f19a18799a35f7c24bdcdc9ea399c601f166259b`. Every module source is pinned to a full commit SHA in `modules.lock.json`; pins are reproducible candidates and have **not** been shown to build together unless a later checkout report explicitly records a successful build.
+The core is the user's fork `alterational/azerothcore-wotlk`, branch `Playerbot`, currently pinned at `f19a18799a35f7c24bdcdc9ea399c601f166259b`. The core branch tip was verified to match this SHA. The required core `worldserver.conf.dist` edits are prepared in [`patches/azerothcore-worldserver-defaults.patch`](patches/azerothcore-worldserver-defaults.patch), but still need a commit in the personal core fork before this workspace can use the final core pin. Module SHAs remain fixed in `modules.lock.json`.
 
-The approved Learn Spells replacement is `azerothcore/mod-learn-spells`. Dungeon Clear remains enabled with its upstream default (`DungeonClear.Enable = 1`). City Life is enabled with its upstream defaults; its manual world SQL and online Playerbots prerequisite are documented separately.
+Learn Spells uses the approved `azerothcore/mod-learn-spells` repository. Dungeon Clear remains enabled at its upstream `DungeonClear.Enable = 1`; City Life remains enabled at its upstream `CityLife.Enable = 1`.
 
 ## Quick start
 
 ```bash
 python3 scripts/validate_project.py
-python3 scripts/materialize.py   # downloads the pinned core and all 66 modules into ./core
+python3 scripts/materialize.py
+python3 scripts/validate_project.py --check-checkout
 python3 scripts/apply_module_config.py --apply --source-templates
+python3 scripts/apply_additional_settings.py --apply --source-templates
+python3 scripts/apply_module_config.py --check --source-templates
+python3 scripts/apply_additional_settings.py --check --source-templates
+python3 scripts/check_core_defaults.py
 ```
 
-The source tree uses about 1.5 GB before build products. See [BUILD.md](docs/BUILD.md) for Codespaces and compilation instructions. The quick start applies audited module defaults to generated `.conf.dist` templates before build; active runtime config checks are documented in [CONFIGURATION.md](docs/CONFIGURATION.md). No database is changed by the scripts in this repository.
+The source tree uses about 1.5 GB before build products. The two module configuration applicators reproduce the audited master switches and additional settings. `check_core_defaults.py` currently reports the pending core-fork commit; do not treat that as complete. See [BUILD.md](docs/BUILD.md) for the exact next steps and build commands. No database is changed by these scripts.
 
 ## Safety and current status
 
-- The Actions workflow checks metadata, Python syntax, and JSON. It does **not** fetch sources, compile, run a server, or apply SQL.
-- No WoW client data, maps, database dumps, passwords, or runtime config files belong in Git. `core/` and build output are ignored.
-- City Life's SQL is a manual world-database migration, not automatically applied by this repository. Do not run it against a live database without a named target, backup, and explicit authorization.
-- The repository has no automated GitHub publication step. Pin refresh is an explicit, reviewed operation and does not prove compatibility.
+- The fast Actions workflow checks manifests, maps, Python syntax, and JSON; it does not prove the sources compile.
+- The Windows workflow materializes and builds the pinned set and checks runtime config. It withholds packaging, artifact upload, and release publication until the core defaults are committed and pinned. GitHub Releases are published only for `v*` tags after a successful final Windows build.
+- No WoW client data, maps, vmaps/mmaps, dumps, passwords, secrets, or active server-specific configs belong in Git or the runtime artifact. The generated `core/` and build output are ignored.
+- City Life's SQL is a manual world-database migration. It is not run by this repository; see [SQL_SETUP.md](docs/SQL_SETUP.md).
+- No Linux or Windows full build has passed yet. See [`CHECKOUT_REPORT.md`](CHECKOUT_REPORT.md) for observed results and blockers.

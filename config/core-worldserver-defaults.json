@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "core_commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
+  "status": "pending_core_fork_commit",
+  "source_config": "src/server/apps/worldserver/worldserver.conf.dist",
+  "patch_file": "patches/azerothcore-worldserver-defaults.patch",
+  "description": "The required worldserver template edits must be committed in alterational/azerothcore-wotlk on Playerbot. The locked source currently has only the recorded upstream values; no generated core file has been edited.",
+  "settings": [
+    {
+      "key": "MapUpdate.Threads",
+      "upstream_default": "1",
+      "target": "4",
+      "evidence": "OwnedCore page 61 recommends setting MapUpdate.Threads to 4."
+    },
+    {
+      "key": "EnablePlayerSettings",
+      "upstream_default": "0",
+      "target": "1",
+      "evidence": "Pinned mod-individual-progression and mod-challenge-modes READMEs require character player settings."
+    },
+    {
+      "key": "DBC.EnforceItemAttributes",
+      "upstream_default": "1",
+      "target": "0",
+      "evidence": "Pinned mod-individual-progression README requires database values to override DBC item attributes."
+    },
+    {
+      "key": "ActivateWeather",
+      "upstream_default": "1",
+      "target": "0",
+      "evidence": "Pinned mod_weather_vibe README requires disabling the core WeatherMgr."
+    }
+  ]
+}
