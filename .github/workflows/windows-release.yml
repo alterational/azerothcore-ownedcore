@@ -177,7 +177,10 @@ jobs:
         shell: pwsh
         run: |
           $log = Join-Path (Join-Path $env:GITHUB_WORKSPACE 'core') 'windows-build.log'
-          if (-not (Test-Path $log)) { Write-Output 'Build log was not created.'; exit 0 }
+          if (-not (Test-Path $log)) {
+            Write-Output '::error title=Windows build diagnostics::Build log was not created.'
+            exit 0
+          }
           $errors = Select-String -Path $log -Pattern 'error C[0-9]+|fatal error|error:|CMake Error|FAILED:|ninja: build stopped' | Select-Object -Last 30
           $tail = Get-Content -LiteralPath $log -Tail 80
           '### Windows build diagnostics' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
@@ -185,7 +188,16 @@ jobs:
           $errors | ForEach-Object { $_.Line | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8 }
           $tail | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          foreach ($errorLine in $errors) { Write-Output "::error title=Windows build diagnostic::$($errorLine.Line)" }
+          if ($errors) {
+            foreach ($errorLine in $errors) { Write-Output "::error title=Windows build diagnostic::$($errorLine.Line)" }
+          }
+          else {
+            $fallback = ($tail | Select-Object -Last 20) -join "`n"
+            if ($fallback.Length -gt 8000) { $fallback = $fallback.Substring($fallback.Length - 8000) }
+            $fallback = $fallback.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            if (-not $fallback) { $fallback = 'No build output was captured.' }
+            Write-Output "::error title=Windows build tail::$fallback"
+          }
 
       - name: Create fresh runtime config files
         shell: pwsh
