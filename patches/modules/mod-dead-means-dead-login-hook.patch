@@ -1,0 +1,7 @@
+diff --git a/src/DeadMeansDead.cpp b/src/DeadMeansDead.cpp
+index 30d93df..899070b 100644
+--- a/src/DeadMeansDead.cpp
++++ b/src/DeadMeansDead.cpp
+@@ -149 +149 @@ public:
+-    void OnLogin(Player* player) override
++    void OnPlayerLogin(Player* player) override
