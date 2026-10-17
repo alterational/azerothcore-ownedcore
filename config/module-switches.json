@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audited_at": "2026-10-17",
-  "core_commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
+  "core_commit": "14c435031d2cb31b1af664af9a83c5d6256302b6",
   "source_of_target_state": "modules.manifest.json: modules[].enabled",
   "runtime_mechanism": {
     "config_output_directory": "core/env/dist/etc",

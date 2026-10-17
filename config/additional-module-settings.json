@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "core_commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
+  "core_commit": "14c435031d2cb31b1af664af9a83c5d6256302b6",
   "description": "Audited non-master module settings; Dynamic.XP.Rate is handled by the existing master-switch map, and only TimeIsTime.SpeedRate differs from its pinned upstream default.",
   "settings": [
     {

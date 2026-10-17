@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Check the pinned core config without editing the core checkout.
 
-While the core fork patches are pending, this confirms the observed values in both pinned server templates and reports outstanding changes. Once committed, set both maps' status to `pinned_in_core_fork`, update their core commit, and the same checker requires all target values. `--require-target` is used by Windows build/release
-jobs so an artifact cannot be produced from an unupdated core pin.
+The maps distinguish pending core-fork changes from defaults already committed
+in the personal fork. Pending mode verifies observed base values and reports the
+outstanding targets; pinned mode requires every target in both server templates.
+`--require-target` is used before Windows dependency setup and compilation.
 """
 from __future__ import annotations
 
@@ -76,7 +78,7 @@ def validate_settings(
         if (entry.get("upstream_default"), entry.get("target")) != values or not entry.get("evidence"):
             fail(f"{label} default {key} must retain audited upstream/target values {values} and evidence")
         if key in WORLD_PATCH_BASE_DEFAULTS and entry.get("patch_base_default") != WORLD_PATCH_BASE_DEFAULTS[key]:
-            fail(f"{label} default {key} must record current Playerbot branch base {WORLD_PATCH_BASE_DEFAULTS[key]}")
+            fail(f"{label} default {key} must record pre-update Playerbot branch base {WORLD_PATCH_BASE_DEFAULTS[key]}")
 
 
 def check_file(path: Path, settings: dict, expected_field: str) -> list[tuple[str, str, str]]:

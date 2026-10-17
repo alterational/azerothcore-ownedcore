@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "core_commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
-  "status": "pending_core_fork_commit",
+  "core_commit": "14c435031d2cb31b1af664af9a83c5d6256302b6",
+  "status": "pinned_in_core_fork",
   "source_config": "src/server/apps/authserver/authserver.conf.dist",
   "patch_file": "patches/azerothcore-authserver-defaults.patch",
-  "description": "Portable authserver logging default derived from authserver.conf at build-repository main commit 46c86b8f52445cb2baaff183e77ca2dd62f622b. Environment-specific directory and executable paths are intentionally not copied.",
+  "description": "Portable authserver logging default derived from authserver.conf at build-repository main commit 46c86b8f52445cb2baaff183e77ca2dd62f622b8. The target is committed in the personal core fork on Playerbot at 14c435031d2cb31b1af664af9a83c5d6256302b6; environment-specific directory and executable paths are intentionally not copied.",
   "settings": [
     {
       "key": "Appender.Auth",

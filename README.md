@@ -12,7 +12,7 @@ A reproducible build workspace for the user's AzerothCore Playerbots fork and th
 
 ## Source pins
 
-The core remains the user's fork `alterational/azerothcore-wotlk`, branch `Playerbot`, pinned at `f19a18799a35f7c24bdcdc9ea399c601f166259b`. A read-only check found the current `Playerbot` tip at `8a4e76eac8c4ccebf547113afe7b51d6c3e91641`, which does not contain the requested defaults. The tracked authserver/worldserver template patches are [`patches/azerothcore-authserver-defaults.patch`](patches/azerothcore-authserver-defaults.patch) and [`patches/azerothcore-worldserver-defaults.patch`](patches/azerothcore-worldserver-defaults.patch); apply and commit them to the personal core fork before advancing this workspace's core pin. Module locks were refreshed on 2026-10-17 to the current default-branch `HEAD` for all 70 listed sources; the lock still pins each resolved commit exactly. This refresh did not change the core SHA and has not yet been compile-tested.
+The core is the user's fork `alterational/azerothcore-wotlk`, branch `Playerbot`, pinned at `14c435031d2cb31b1af664af9a83c5d6256302b6`. The user committed the reviewed authserver/worldserver source defaults in the core fork; a read-only check of both `.conf.dist` files at that commit confirmed all ten tracked target values. The previous pin was `f19a18799a35f7c24bdcdc9ea399c601f166259b`. Module locks were refreshed on 2026-10-17 and were preserved during this separate core-pin update. Neither the refreshed module set nor the new core pin has yet been proven by a full build.
 
 Learn Spells uses the approved `azerothcore/mod-learn-spells` repository. Dungeon Clear remains enabled at its upstream `DungeonClear.Enable = 1`; City Life remains enabled at its upstream `CityLife.Enable = 1`.
 
@@ -33,12 +33,12 @@ python3 scripts/apply_additional_settings.py --check --source-templates
 python3 scripts/check_core_defaults.py
 ```
 
-The source tree uses about 1.5 GB before build products. The two module configuration applicators reproduce the audited master switches and additional settings. `check_core_defaults.py` currently reports the pending core-fork commit; do not treat that as complete. See [BUILD.md](docs/BUILD.md) for the exact next steps and build commands. No database is changed by these scripts.
+The source tree uses about 1.5 GB before build products. The module configuration applicators reproduce the audited master switches and additional settings. `check_core_defaults.py --require-target` checks the ten reviewed authserver/worldserver defaults in the pinned core templates; runtime mode checks installed configs after a build. See [BUILD.md](docs/BUILD.md) for commands. No database is changed by these scripts.
 
 ## Safety and current status
 
 - The fast Actions workflow checks manifests, maps, Python syntax, and JSON; it does not prove the sources compile.
-- The Windows workflow materializes and builds the pinned set and checks runtime config. It withholds packaging, artifact upload, and release publication until the core defaults are committed and pinned. GitHub Releases are published only for `v*` tags after a successful final Windows build.
+- The Windows workflow checks the pinned core defaults before dependency setup or compilation, then builds and checks runtime config. Packaging, artifact upload, and release publication occur only after a successful build. GitHub Releases are published only for `v*` tags after a successful final Windows build.
 - No WoW client data, maps, vmaps/mmaps, dumps, passwords, secrets, or active server-specific configs belong in Git or the runtime artifact. The generated `core/` and build output are ignored.
 - City Life's SQL is a manual world-database migration. It is not run by this repository; see [SQL_SETUP.md](docs/SQL_SETUP.md).
 - No Linux or Windows full build has passed yet. See [`CHECKOUT_REPORT.md`](CHECKOUT_REPORT.md) for observed results and blockers.

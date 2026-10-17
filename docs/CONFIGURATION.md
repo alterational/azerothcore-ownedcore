@@ -22,11 +22,11 @@ python3 scripts/apply_additional_settings.py --check --source-templates
 
 Both applicators use only tracked maps, preserve unrelated defaults, fail closed on unexpected values, and write atomically. City Life remains enabled at `CityLife.Enable = 1`; Dungeon Clear remains enabled at `DungeonClear.Enable = 1`. No SQL is run.
 
-## Core authserver/worldserver defaults belong in the core fork
+## Core authserver/worldserver source defaults
 
-The active configs added to build-repository `main` at commit `46c86b8f52445cb2baaff183e77ca2dd62f622b8` were compared with the locked core templates at `f19a18799a35f7c24bdcdc9ea399c601f166259b` and the read-only current `Playerbot` tip `8a4e76eac8c4ccebf547113afe7b51d6c3e91641`. Ten portable defaults are tracked for the core fork:
+The active configs added to build-repository `main` at commit `46c86b8f52445cb2baaff183e77ca2dd62f622b8` were compared with the previous core pin `f19a18799a35f7c24bdcdc9ea399c601f166259b` and the pre-update `Playerbot` tip `8a4e76eac8c4ccebf547113afe7b51d6c3e91641`. The user committed the ten reviewed targets to the core fork; the current pin is `14c435031d2cb31b1af664af9a83c5d6256302b6`. The table's “previous default” column records the before-values:
 
-| Source template | Setting | Current pinned value | Requested value | Reason |
+| Source template | Setting | Previous default (`f19a187`) | Current source default | Reason |
 |---|---|---|---|---|
 | authserver | `Appender.Auth` | `2,5,0,Auth.log,w` | `2,5,8,Auth.log,w` | Timestamp auth log filenames (flag 8) |
 | worldserver | `Appender.Server` | `2,5,0,Server.log,w` | `2,5,8,Server.log,w` | Timestamp server log filenames (flag 8) |
@@ -39,7 +39,7 @@ The active configs added to build-repository `main` at commit `46c86b8f52445cb2b
 | worldserver | `EnablePlayerSettings` | `0` | `1` | Required by pinned Individual Progression and Challenge Modes READMEs |
 | worldserver | `DBC.EnforceItemAttributes` | `1` | `0` | Required by pinned Individual Progression README |
 
-The config comparison also found path differences for `DataDir`, `LogsDir`, `TempDir`, `SourceDirectory`, and `MySQLExecutable`. These remain environment-specific runtime settings and are deliberately not promoted into shared source defaults. Database connection values were not changed. The patches are [`patches/azerothcore-worldserver-defaults.patch`](../patches/azerothcore-worldserver-defaults.patch) and [`patches/azerothcore-authserver-defaults.patch`](../patches/azerothcore-authserver-defaults.patch); apply both and commit them to `alterational/azerothcore-wotlk` on `Playerbot`. The ignored generated core checkout has not been edited. The two core-default maps record the pending state; `scripts/check_core_defaults.py` verifies both source templates and runtime configs. The Windows workflow uses `--require-target` and will not build/package until all ten settings are pinned.
+The config comparison also found path differences for `DataDir`, `LogsDir`, `TempDir`, `SourceDirectory`, and `MySQLExecutable`. These remain environment-specific runtime settings and are deliberately not promoted into shared source defaults. Database connection values were not changed. The two patch files preserve the reviewed source diff; the committed core templates at `14c435031d2cb31b1af664af9a83c5d6256302b6` already contain the targets, so they are not applied again during materialization. The maps record `pinned_in_core_fork`; `scripts/check_core_defaults.py --require-target` verifies both source templates before a build and can also check installed runtime configs.
 
 The RDF expansion and Dynamic XP requests preserve pinned defaults; the only module-template value changed beyond master switches is TimeIsTime's speed rate. Do not adjust other upstream defaults.
 

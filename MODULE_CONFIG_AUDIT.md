@@ -18,11 +18,11 @@ The pinned core builds `CONFIG_FILE_LIST` from each selected module’s `conf/*.
 
 The OwnedCore settings were checked against the thread's [page 61](https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-general-releases/1040387-azerothcore-wotlk-repack-playerbots-individual-progression-32-other-modules-61.html) and [page 88](https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-general-releases/1040387-azerothcore-wotlk-repack-playerbots-individual-progression-32-other-modules-88.html). The pinned module templates/source confirm `RDF.Expansion = 2`, `Dynamic.XP.Rate = 1`, and `TimeIsTime.SpeedRate = 1.0` before application.
 
-## Core authserver/worldserver defaults (pending personal-fork commit)
+## Core authserver/worldserver defaults (committed in the personal fork)
 
-Active configs added to build-repository `main` at `46c86b8f52445cb2baaff183e77ca2dd62f622b8` were compared with the pinned core templates at `f19a18799a35f7c24bdcdc9ea399c601f166259b`. Ten portable differences are tracked in the two zero-context patches:
+Active configs added to build-repository `main` at `46c86b8f52445cb2baaff183e77ca2dd62f622b8` were compared with the previous core pin `f19a18799a35f7c24bdcdc9ea399c601f166259b`. The user committed the selected source defaults to `alterational/azerothcore-wotlk` on `Playerbot`; the current core pin is `14c435031d2cb31b1af664af9a83c5d6256302b6`. Ten portable targets are recorded in the two patches/maps:
 
-| Source template | Setting | Pinned default | Requested default | Evidence |
+| Source template | Setting | Previous pinned default (`f19a187`) | Current core source default | Evidence |
 |---|---|---:|---:|---|
 | authserver | `Appender.Auth` | `2,5,0,Auth.log,w` | `2,5,8,Auth.log,w` | Active authserver config; timestamp-file flag 8 |
 | worldserver | `Appender.Server` | `2,5,0,Server.log,w` | `2,5,8,Server.log,w` | Active worldserver config; timestamp-file flag 8 |
@@ -35,7 +35,7 @@ Active configs added to build-repository `main` at `46c86b8f52445cb2baaff183e77c
 | worldserver | `EnablePlayerSettings` | `0` | `1` | Pinned Individual Progression and Challenge Modes READMEs |
 | worldserver | `DBC.EnforceItemAttributes` | `1` | `0` | Pinned Individual Progression README |
 
-Path settings (`DataDir`, `LogsDir`, `TempDir`, `SourceDirectory`, and `MySQLExecutable`) differ in the active files but are intentionally not copied into shared defaults; database connection values are unchanged. `patches/azerothcore-worldserver-defaults.patch` and `patches/azerothcore-authserver-defaults.patch` both pass `git apply --check --unidiff-zero` against current `Playerbot` branch tip `8a4e76eac8c4ccebf547113afe7b51d6c3e91641`; the locked f19 core already has `DungeonFinder.OptionsMask = 5`, while the newer branch has `7`. No core files were modified. They must be applied and committed to `alterational/azerothcore-wotlk` on `Playerbot`, then the resulting SHA must be recorded in the build-repository manifest, lock, validator, both config maps, and docs. Until then, the Windows workflow stops at `check_core_defaults.py --require-target` before dependency setup or compilation.
+Path settings (`DataDir`, `LogsDir`, `TempDir`, `SourceDirectory`, and `MySQLExecutable`) differ in the active files but remain environment-specific; database connection values are unchanged. The old core pin `f19a187` already had `DungeonFinder.OptionsMask = 5`, while the pre-update `Playerbot` tip `8a4e76e` had `7`. The user-provided current pin `14c435031d2cb31b1af664af9a83c5d6256302b6` now contains all ten targets. Read-only inspection of both templates at that SHA confirmed the target assignments. The maps record `pinned_in_core_fork`; the Windows workflow still requires the source-default check to pass before dependency setup or compilation.
 
 ## Master switches
 

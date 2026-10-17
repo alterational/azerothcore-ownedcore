@@ -2,7 +2,7 @@
 
 Updated 2026-10-17 from the supplied OwnedCore list. There are **70 unique repositories**: **56 enabled** and **14 initially disabled**. Every source remains `install: true`; disabled means runtime-off, not omitted from checkout. `modules.lock.json` now pins the latest `HEAD` of each repository default branch as resolved on 2026-10-17. These are immutable candidate pins, not compile/runtime proof.
 
-`modules.manifest.json` defines membership and runtime state; `modules.lock.json` records the exact branch and 40-character commit used for every checkout. The core pin remains `f19a18799a35f7c24bdcdc9ea399c601f166259b`; this module-only refresh did not change the core.
+`modules.manifest.json` defines membership and runtime state; `modules.lock.json` records the exact branch and 40-character commit used for every checkout. The core is now pinned at `14c435031d2cb31b1af664af9a83c5d6256302b6`, after the user committed the reviewed source config defaults. The 2026-10-17 module pins were preserved during this separate core-pin update.
 
 ## Enabled (56)
 

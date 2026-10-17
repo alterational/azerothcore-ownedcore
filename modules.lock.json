@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "resolved_at": "2026-10-17",
-  "resolution_method": "git ls-remote --symref HEAD; candidate default-branch tips, not compile-tested; core pin preserved",
+  "resolution_method": "Module pins resolved via git ls-remote --symref HEAD on 2026-10-17; core manually pinned to user-provided Playerbot commit after verifying all tracked server config defaults; no module pins changed during the core update; not compile-tested",
   "core": {
     "url": "https://github.com/alterational/azerothcore-wotlk.git",
     "branch": "Playerbot",
-    "commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
+    "commit": "14c435031d2cb31b1af664af9a83c5d6256302b6",
     "resolved": true,
     "refresh_ok": true
   },

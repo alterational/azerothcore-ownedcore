@@ -4,33 +4,13 @@
 
 `.github/workflows/validate.yml` checks manifest/lock consistency, the module switch map, tracked additional/core-default maps, Python syntax, and JSON syntax. It does not fetch sources, compile, start a server, validate a database, or require client data.
 
-The Codespaces `postCreateCommand` validates and materializes the pinned core plus all 70 modules, validates every checkout against the lock, applies/checks the reviewed source compatibility patch, applies/checks the tracked module switches and additional module settings, then checks the pinned core config state. It does not install system dependencies, compile, start a server, or apply SQL. At the current core SHA, that final check explicitly reports that the tracked authserver/worldserver defaults are pending in the personal core fork. An already-created Codespace does not rerun `postCreateCommand`; pull the build-repository branch and run the preparation commands below or rebuild the container.
+The Codespaces `postCreateCommand` validates and materializes the pinned core plus all 70 modules, validates every checkout against the lock, applies/checks the reviewed source compatibility patch, applies/checks the tracked module switches and additional module settings, then checks the pinned core config state. It does not install system dependencies, compile, start a server, or apply SQL. At the current core SHA, that final check verifies the committed authserver/worldserver defaults in the personal core fork. An already-created Codespace does not rerun `postCreateCommand`; pull the build-repository branch and run the preparation commands below or rebuild the container.
 
-## Required core-fork change before building
+## Core configuration defaults (committed)
 
-The current core SHA still has the original values for `MapUpdate.Threads`, `EnablePlayerSettings`, `DBC.EnforceItemAttributes`, and `ActivateWeather`. Comparing the active config files on build-repository `main` also identified six portable defaults for logging, `.die` behavior, and the LFG options mask; these are included in the tracked authserver/worldserver patches. The required changes belong in the history of `alterational/azerothcore-wotlk` on `Playerbot`, not as local modifications to the ignored `core/` checkout in this repository.
+The required authserver/worldserver source-default changes are committed in the user's core fork `alterational/azerothcore-wotlk`, branch `Playerbot`, at `14c435031d2cb31b1af664af9a83c5d6256302b6`. That commit is the core SHA in `modules.lock.json`; read-only checks of both pinned `.conf.dist` templates confirmed all ten target values. The four required compatibility defaults (`MapUpdate.Threads = 4`, `EnablePlayerSettings = 1`, `DBC.EnforceItemAttributes = 0`, and `ActivateWeather = 0`) are present, along with the reviewed logging, `.die`, and Dungeon Finder defaults. Machine-specific path values and database connection settings were not copied.
 
-From the build repository's materialized `core/` checkout, after fetching the current personal `Playerbot` branch:
-
-```bash
-cd core
-git fetch origin refs/heads/Playerbot:refs/remotes/origin/Playerbot
-git switch --track -c Playerbot origin/Playerbot
-git apply --check --unidiff-zero ../patches/azerothcore-worldserver-defaults.patch
-git apply --check --unidiff-zero ../patches/azerothcore-authserver-defaults.patch
-git apply --unidiff-zero ../patches/azerothcore-worldserver-defaults.patch
-git apply --unidiff-zero ../patches/azerothcore-authserver-defaults.patch
-grep -n -E '^(Appender\.(Server|Playerbots|Errors)|MapUpdate\.Threads|ActivateWeather|Die\.Command\.Mode|EnablePlayerSettings|DBC\.EnforceItemAttributes) *=' src/server/apps/worldserver/worldserver.conf.dist
-grep -n '^Appender.Auth=' src/server/apps/authserver/authserver.conf.dist
-git add src/server/apps/worldserver/worldserver.conf.dist src/server/apps/authserver/authserver.conf.dist
-git commit -m "Set OwnedCore server config defaults"
-git push origin HEAD:Playerbot
-git rev-parse HEAD
-```
-
-Record the resulting 40-character SHA. Update only these core fields in the build repository: `modules.manifest.json` → `core.candidate_commit`; `modules.lock.json` → `core.commit`; `scripts/validate_project.py` → `EXPECTED_CORE_SHA` (leave `PENDING_CORE_SHA` at the old SHA); `config/module-switches.json` and `config/additional-module-settings.json` → `core_commit`; and both `config/core-worldserver-defaults.json` and `config/core-authserver-defaults.json` → the new `core_commit` plus status `pinned_in_core_fork`. Update the core SHA in `README.md`, `MODULE_CONFIG_AUDIT.md`, and `CHECKOUT_REPORT.md` too. The module pins were refreshed to current default-branch HEADs on 2026-10-17; preserve them during this core-pin update. Do not run `scripts/refresh_lock.py` without `--modules-only`, because its default also refreshes core. Until the new core pin and maps are updated, `python3 scripts/check_core_defaults.py --require-target` fails and the Windows workflow stops at its pre-build gate. No dependency setup, compilation, packaging, artifact upload, or release publication may proceed.
-
-> The two zero-context patches cover the reviewed portable authserver/worldserver defaults and are verified against both files at current core branch tip `8a4e76eac8c4ccebf547113afe7b51d6c3e91641`. The locked core `f19a18799a35f7c24bdcdc9ea399c601f166259b` already has `DungeonFinder.OptionsMask = 5`; the current branch tip has `7`, so the patch normalizes it when preparing the new pin. Machine-specific path values from the active configs are intentionally not copied. This session cannot push a commit to core branch `Playerbot`; the user must apply both patches and commit them to the personal core fork, then provide the resulting SHA for the build-repository pin update.
+`python3 scripts/check_core_defaults.py --require-target` is now the pre-build gate: it must pass against the pinned source. No full build has yet been proven by this source check alone. The patches under `patches/azerothcore-*-defaults.patch` document the source changes; do not apply them again to the already-updated pinned core.
 
 ## Linux/Codespaces build
 
@@ -49,7 +29,7 @@ python3 scripts/apply_additional_settings.py --check --source-templates
 python3 scripts/check_core_defaults.py --require-target
 ```
 
-After the core-fork commit has been pinned and the last command passes, build with the requested commands:
+Once the last pre-build check passes, build with the requested commands:
 
 ```bash
 cd core

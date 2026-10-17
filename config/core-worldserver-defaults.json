@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "core_commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
-  "status": "pending_core_fork_commit",
+  "core_commit": "14c435031d2cb31b1af664af9a83c5d6256302b6",
+  "status": "pinned_in_core_fork",
   "source_config": "src/server/apps/worldserver/worldserver.conf.dist",
   "patch_file": "patches/azerothcore-worldserver-defaults.patch",
-  "description": "Worldserver defaults compare the locked core and current Playerbot branch with the user-provided active config at build-repository main commit 46c86b8f52445cb2baaff183e77ca2dd62f622b8. The selected portable defaults and four required core/module compatibility values must be committed in alterational/azerothcore-wotlk on Playerbot; environment-specific paths remain unchanged.",
+  "description": "Worldserver defaults were compared with the user-provided active config at build-repository main commit 46c86b8f52445cb2baaff183e77ca2dd62f622b8. The selected portable defaults and four required core/module compatibility values are present in alterational/azerothcore-wotlk on Playerbot at 14c435031d2cb31b1af664af9a83c5d6256302b6; environment-specific paths remain unchanged.",
   "settings": [
     {
       "key": "MapUpdate.Threads",
@@ -58,7 +58,7 @@
       "key": "DungeonFinder.OptionsMask",
       "upstream_default": "5",
       "target": "5",
-      "evidence": "The locked core f19a187 already has 5; current Playerbot branch tip 8a4e76e has 7. The patch restores 5 on the branch tip, matching the active worldserver.conf at build-repository main commit 46c86b8.",
+      "evidence": "The previous locked core f19a187 already had 5; pre-update Playerbot tip 8a4e76e had 7. The user committed target 5 in the current Playerbot source, matching active worldserver.conf at build-repository main commit 46c86b8.",
       "patch_base_default": "7"
     }
   ]

@@ -19,7 +19,7 @@ CORE_AUTH_DEFAULTS_PATH = ROOT / "config" / "core-authserver-defaults.json"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 EXPECTED_CORE_URL = "https://github.com/alterational/azerothcore-wotlk.git"
 EXPECTED_CORE_BRANCH = "Playerbot"
-EXPECTED_CORE_SHA = "f19a18799a35f7c24bdcdc9ea399c601f166259b"
+EXPECTED_CORE_SHA = "14c435031d2cb31b1af664af9a83c5d6256302b6"
 PENDING_CORE_SHA = "f19a18799a35f7c24bdcdc9ea399c601f166259b"
 EXPECTED_LEARN_SPELLS_URL = "https://github.com/azerothcore/mod-learn-spells.git"
 
@@ -239,7 +239,7 @@ def check_core_defaults_mapping(lock: dict) -> str:
             if (entry.get("upstream_default"), entry.get("target")) != values or not entry.get("evidence"):
                 fail(f"Core {label} default {key} must retain audited upstream/target values {values} and evidence")
             if key == "DungeonFinder.OptionsMask" and entry.get("patch_base_default") != "7":
-                fail("DungeonFinder.OptionsMask must record current Playerbot branch default 7 separately from the locked core default")
+                fail("DungeonFinder.OptionsMask must record pre-update Playerbot branch default 7 separately from the pinned core target")
     return world_status
 
 
