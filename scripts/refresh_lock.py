@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Refresh candidate pins from upstream refs (network operation; rewrites lockfile).
 
-This script deliberately has no CLI flags. Running it performs a refresh; it does
-not compile/test the resulting set. Use only for an explicitly reviewed pin update.
+By default this refreshes module HEADs and the configured core branch. Use
+--modules-only to preserve the core lock exactly; that mode fails without writing
+if any requested module ref cannot be resolved. Neither mode compiles/tests the
+resulting set, so use only for an explicitly reviewed pin update.
 """
 from __future__ import annotations
 
+import argparse
 import concurrent.futures
 import json
 import subprocess
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -67,49 +71,71 @@ def resolve_module(module: dict) -> tuple[str, dict]:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--modules-only",
+        action="store_true",
+        help="refresh module HEADs but preserve the current core lock exactly",
+    )
+    args = parser.parse_args()
+
     modules = MANIFEST["modules"]
     refreshed = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
         for module_id, item in pool.map(resolve_module, modules):
             refreshed[module_id] = item
 
-    core = MANIFEST.get("core", {})
-    core_url = core.get("repository")
-    core_branch = core.get("branch")
-    if core_url and core_branch:
-        try:
-            _, core_commit, core_error = ls_remote(core_url, f"refs/heads/{core_branch}")
-        except Exception as exc:
-            core_commit, core_error = None, str(exc)
-        old_core = LOCK.get("core", {})
-        if core_commit:
-            core_entry = {"url": core_url, "branch": core_branch, "commit": core_commit, "resolved": True, "refresh_ok": True}
-        elif old_core.get("commit"):
-            core_entry = dict(old_core)
-            core_entry["refresh_ok"] = False
-            core_entry["last_refresh_error"] = core_error
-        else:
-            core_entry = {"url": core_url, "branch": core_branch, "commit": None, "resolved": False, "refresh_ok": False, "last_refresh_error": core_error}
+    old_core = LOCK.get("core", {})
+    if args.modules_only:
+        core_entry = old_core
     else:
-        core_entry = LOCK.get("core", {})
+        core = MANIFEST.get("core", {})
+        core_url = core.get("repository")
+        core_branch = core.get("branch")
+        if core_url and core_branch:
+            try:
+                _, core_commit, core_error = ls_remote(core_url, f"refs/heads/{core_branch}")
+            except Exception as exc:
+                core_commit, core_error = None, str(exc)
+            if core_commit:
+                core_entry = {"url": core_url, "branch": core_branch, "commit": core_commit, "resolved": True, "refresh_ok": True}
+            elif old_core.get("commit"):
+                core_entry = dict(old_core)
+                core_entry["refresh_ok"] = False
+                core_entry["last_refresh_error"] = core_error
+            else:
+                core_entry = {"url": core_url, "branch": core_branch, "commit": None, "resolved": False, "refresh_ok": False, "last_refresh_error": core_error}
+        else:
+            core_entry = old_core
 
+    bad = [m["name"] for m in modules if not refreshed[m["id"]].get("refresh_ok")]
+    if args.modules_only and bad:
+        print("Module-only refresh aborted; every requested repository must resolve before rewriting the lock:", file=sys.stderr)
+        for name in bad:
+            print(f" - {name}", file=sys.stderr)
+        return 1
+
+    method = "git ls-remote --symref HEAD; candidate default-branch tips, not compile-tested"
+    if args.modules_only:
+        method += "; core pin preserved"
     result = {
         "schema_version": 1,
         "resolved_at": date.today().isoformat(),
-        "resolution_method": "git ls-remote --symref; commit pins are candidate remote tips, not compile-tested",
+        "resolution_method": method,
         "core": core_entry,
         "modules": refreshed,
     }
     LOCK_PATH.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     good = sum(bool(v.get("commit")) for v in refreshed.values())
-    bad = [m["name"] for m in modules if not refreshed[m["id"]].get("refresh_ok")]
     print(f"Resolved/refreshed {good}/{len(modules)} module pins.")
     if bad:
         print("Could not refresh these links (previous pins, if present, were kept):")
         for name in bad:
             print(f" - {name}")
-    print("Review modules.lock.json, then run a full build/test before merging.")
+    if args.modules_only:
+        print(f"Core lock preserved at {core_entry.get('commit')}.")
+    print("Candidate branch tips are not compile-tested; run the repository's validation/build review before merging.")
     return 0
 
 

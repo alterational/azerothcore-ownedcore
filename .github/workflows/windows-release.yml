@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   build:
-    name: Build pinned core and 66 modules (Windows)
+    name: Build pinned core and 70 modules (Windows)
     runs-on: windows-latest
     timeout-minutes: 360
     outputs:

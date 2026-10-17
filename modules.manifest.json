@@ -2,7 +2,7 @@
   "schema_version": 1,
   "title": "OwnedCore AzerothCore Playerbots module set + City Life",
   "source_thread": "https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-general-releases/1040387-azerothcore-wotlk-repack-playerbots-individual-progression-32-other-modules.html",
-  "extracted_at": "2026-10-04",
+  "extracted_at": "2026-10-17",
   "core": {
     "repository": "https://github.com/alterational/azerothcore-wotlk.git",
     "branch": "Playerbot",
@@ -11,6 +11,27 @@
     "note": "Core fork and branch explicitly specified by the user; commit resolved from refs/heads/Playerbot on 2026-10-04."
   },
   "modules": [
+    {
+      "id": "BGQueueChecker",
+      "name": "BG Queue checker",
+      "labels": [
+        "BG Queue checker"
+      ],
+      "source_url": "https://github.com/AnchyDev/BGQueueChecker",
+      "clone_url": "https://github.com/AnchyDev/BGQueueChecker.git",
+      "install": true,
+      "enabled": true,
+      "optional": false,
+      "added_on": null,
+      "listed_in": [
+        {
+          "section_state": "enabled",
+          "added_on": null
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
     {
       "id": "mod-1v1-arena",
       "name": "1v1 Arena",
@@ -54,6 +75,27 @@
       "config_policy": "match_manifest_state"
     },
     {
+      "id": "mod-account-mounts",
+      "name": "Account Mounts",
+      "labels": [
+        "Account Mounts"
+      ],
+      "source_url": "https://github.com/azerothcore/mod-account-mounts",
+      "clone_url": "https://github.com/azerothcore/mod-account-mounts.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": "21-06-2025",
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": "21-06-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
       "id": "mod-ah-bot",
       "name": "AHBot",
       "labels": [
@@ -61,6 +103,69 @@
       ],
       "source_url": "https://github.com/azerothcore/mod-ah-bot",
       "clone_url": "https://github.com/azerothcore/mod-ah-bot.git",
+      "install": true,
+      "enabled": true,
+      "optional": false,
+      "added_on": null,
+      "listed_in": [
+        {
+          "section_state": "enabled",
+          "added_on": null
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-ale",
+      "name": "ALE (Azerothcore LUA engine)",
+      "labels": [
+        "ALE (Azerothcore LUA engine)"
+      ],
+      "source_url": "https://github.com/azerothcore/mod-ale",
+      "clone_url": "https://github.com/azerothcore/mod-ale.git",
+      "install": true,
+      "enabled": true,
+      "optional": false,
+      "added_on": "08-09-2026",
+      "listed_in": [
+        {
+          "section_state": "enabled",
+          "added_on": "08-09-2026"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-aoe-loot",
+      "name": "AOE Loot (Fixed Fork)",
+      "labels": [
+        "AOE Loot (Fixed Fork)"
+      ],
+      "source_url": "https://github.com/TerraByte-tbwps/mod-aoe-loot",
+      "clone_url": "https://github.com/TerraByte-tbwps/mod-aoe-loot.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": "21-05-2025",
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": "21-05-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-auto-revive",
+      "name": "AutoRevive",
+      "labels": [
+        "AutoRevive"
+      ],
+      "source_url": "https://github.com/azerothcore/mod-auto-revive",
+      "clone_url": "https://github.com/azerothcore/mod-auto-revive.git",
       "install": true,
       "enabled": true,
       "optional": false,
@@ -96,21 +201,21 @@
       "config_policy": "match_manifest_state"
     },
     {
-      "id": "mod-auto-revive",
-      "name": "AutoRevive",
+      "id": "mod-autosort",
+      "name": "Auto Sort",
       "labels": [
-        "AutoRevive"
+        "Auto Sort"
       ],
-      "source_url": "https://github.com/azerothcore/mod-auto-revive",
-      "clone_url": "https://github.com/azerothcore/mod-auto-revive.git",
+      "source_url": "https://github.com/silviu20092/mod-autosort",
+      "clone_url": "https://github.com/silviu20092/mod-autosort.git",
       "install": true,
       "enabled": true,
       "optional": false,
-      "added_on": null,
+      "added_on": "03-10-2026",
       "listed_in": [
         {
           "section_state": "enabled",
-          "added_on": null
+          "added_on": "03-10-2026"
         }
       ],
       "source_conflict": false,
@@ -132,27 +237,6 @@
         {
           "section_state": "enabled",
           "added_on": "19-03-2025"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "BGQueueChecker",
-      "name": "BG Queue checker",
-      "labels": [
-        "BG Queue checker"
-      ],
-      "source_url": "https://github.com/AnchyDev/BGQueueChecker",
-      "clone_url": "https://github.com/AnchyDev/BGQueueChecker.git",
-      "install": true,
-      "enabled": true,
-      "optional": false,
-      "added_on": null,
-      "listed_in": [
-        {
-          "section_state": "enabled",
-          "added_on": null
         }
       ],
       "source_conflict": false,
@@ -201,6 +285,27 @@
       "config_policy": "match_manifest_state"
     },
     {
+      "id": "mod-cfbg",
+      "name": "Cross Faction Battlegrounds",
+      "labels": [
+        "Cross Faction Battlegrounds"
+      ],
+      "source_url": "https://github.com/azerothcore/mod-cfbg",
+      "clone_url": "https://github.com/azerothcore/mod-cfbg.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": "19-03-2025",
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": "19-03-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
       "id": "mod-challenge-modes",
       "name": "Challenge Modes",
       "labels": [
@@ -243,26 +348,6 @@
       "config_policy": "match_manifest_state"
     },
     {
-      "id": "mod-playerbots-city-life",
-      "name": "City Life",
-      "source_url": "https://github.com/vrzgames/mod-playerbots-city-life",
-      "clone_url": "https://github.com/vrzgames/mod-playerbots-city-life.git",
-      "install": true,
-      "enabled": true,
-      "optional": false,
-      "added_on": null,
-      "listed_in": [
-        {
-          "section_state": "enabled",
-          "added_on": null,
-          "source": "user_requested"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "leave_upstream_default",
-      "notes": "User-requested. Requires the Playerbot AzerothCore branch and mod-playerbots; reuses already-online random bots and does not create/increase the random-bot population."
-    },
-    {
       "id": "mod-dead-means-dead",
       "name": "Dead Means Dead",
       "labels": [
@@ -299,6 +384,27 @@
         {
           "section_state": "enabled",
           "added_on": "19-03-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-dual-tracking",
+      "name": "Dual Tracking",
+      "labels": [
+        "Dual Tracking"
+      ],
+      "source_url": "https://github.com/b-wun/mod-dual-tracking",
+      "clone_url": "https://github.com/b-wun/mod-dual-tracking.git",
+      "install": true,
+      "enabled": true,
+      "optional": false,
+      "added_on": "27-09-2026",
+      "listed_in": [
+        {
+          "section_state": "enabled",
+          "added_on": "27-09-2026"
         }
       ],
       "source_conflict": false,
@@ -522,21 +628,21 @@
       "config_policy": "match_manifest_state"
     },
     {
-      "id": "mod-individual-xp",
-      "name": "Individual XP",
+      "id": "mod-individual-rates",
+      "name": "Individual Rates",
       "labels": [
-        "Individual XP"
+        "Individual Rates"
       ],
-      "source_url": "https://github.com/azerothcore/mod-individual-xp",
-      "clone_url": "https://github.com/azerothcore/mod-individual-xp.git",
+      "source_url": "https://github.com/Sphynxmods/mod-individual-rates",
+      "clone_url": "https://github.com/Sphynxmods/mod-individual-rates.git",
       "install": true,
       "enabled": true,
       "optional": false,
-      "added_on": "23-12-2024",
+      "added_on": "03-10-2026",
       "listed_in": [
         {
           "section_state": "enabled",
-          "added_on": "23-12-2024"
+          "added_on": "03-10-2026"
         }
       ],
       "source_conflict": false,
@@ -603,9 +709,28 @@
         }
       ],
       "source_conflict": false,
-      "config_policy": "match_manifest_state",
-      "source_override": "https://github.com/noisiver/mod-learnspells",
-      "notes": "User supplied this working replacement for the inaccessible OwnedCore Learn Spells link."
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-leech",
+      "name": "Leech",
+      "labels": [
+        "Leech"
+      ],
+      "source_url": "https://github.com/ZhengPeiRu21/mod-leech",
+      "clone_url": "https://github.com/ZhengPeiRu21/mod-leech.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": null,
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": null
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
     },
     {
       "id": "mod-low-level-rbg",
@@ -623,6 +748,27 @@
         {
           "section_state": "enabled",
           "added_on": "19-03-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-money-for-kills",
+      "name": "Money for Kills",
+      "labels": [
+        "Money for Kills"
+      ],
+      "source_url": "https://github.com/azerothcore/mod-money-for-kills",
+      "clone_url": "https://github.com/azerothcore/mod-money-for-kills.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": null,
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": null
         }
       ],
       "source_conflict": false,
@@ -665,6 +811,27 @@
         {
           "section_state": "enabled",
           "added_on": "25-05-2026"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-no-hearthstone-cooldown",
+      "name": "No Heartstone Cooldown",
+      "labels": [
+        "No Heartstone Cooldown"
+      ],
+      "source_url": "https://github.com/BytesGalore/mod-no-hearthstone-cooldown",
+      "clone_url": "https://github.com/BytesGalore/mod-no-hearthstone-cooldown.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": null,
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": null
         }
       ],
       "source_conflict": false,
@@ -734,6 +901,27 @@
       "config_policy": "match_manifest_state"
     },
     {
+      "id": "mod-npc-free-professions",
+      "name": "NPC Free Professions",
+      "labels": [
+        "NPC Free Professions"
+      ],
+      "source_url": "https://github.com/azerothcore/mod-npc-free-professions",
+      "clone_url": "https://github.com/azerothcore/mod-npc-free-professions.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": "19-03-2025",
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": "19-03-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
       "id": "mod-npc-spectator",
       "name": "NPC Spectator",
       "labels": [
@@ -770,6 +958,27 @@
         {
           "section_state": "enabled",
           "added_on": "11-02-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-ollama-chat",
+      "name": "Ollama Chat",
+      "labels": [
+        "Ollama Chat"
+      ],
+      "source_url": "https://github.com/DustinHendrickson/mod-ollama-chat",
+      "clone_url": "https://github.com/DustinHendrickson/mod-ollama-chat.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": "23-07-2026",
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": "23-07-2026"
         }
       ],
       "source_conflict": false,
@@ -818,6 +1027,27 @@
       "config_policy": "match_manifest_state"
     },
     {
+      "id": "mod-player-bot-level-brackets",
+      "name": "Playerbot Level Brackets",
+      "labels": [
+        "Playerbot Level Brackets"
+      ],
+      "source_url": "https://github.com/DustinHendrickson/mod-player-bot-level-brackets",
+      "clone_url": "https://github.com/DustinHendrickson/mod-player-bot-level-brackets.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": "21-06-2025",
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": "21-06-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
       "id": "mod-playerbots",
       "name": "Playerbots",
       "labels": [
@@ -839,6 +1069,26 @@
       "config_policy": "match_manifest_state"
     },
     {
+      "id": "mod-playerbots-city-life",
+      "name": "City Life",
+      "source_url": "https://github.com/vrzgames/mod-playerbots-city-life",
+      "clone_url": "https://github.com/vrzgames/mod-playerbots-city-life.git",
+      "install": true,
+      "enabled": true,
+      "optional": false,
+      "added_on": null,
+      "listed_in": [
+        {
+          "section_state": "enabled",
+          "added_on": null,
+          "source": "user_requested"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "leave_upstream_default",
+      "notes": "User-requested. Requires the Playerbot AzerothCore branch and mod-playerbots; reuses already-online random bots and does not create/increase the random-bot population."
+    },
+    {
       "id": "mod-pvp-titles",
       "name": "PVP Titles",
       "labels": [
@@ -853,6 +1103,27 @@
       "listed_in": [
         {
           "section_state": "enabled",
+          "added_on": null
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-pvp-zones",
+      "name": "PVP Zones",
+      "labels": [
+        "PVP Zones"
+      ],
+      "source_url": "https://github.com/azerothcore/mod-pvp-zones",
+      "clone_url": "https://github.com/azerothcore/mod-pvp-zones.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": null,
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
           "added_on": null
         }
       ],
@@ -923,6 +1194,27 @@
       "config_policy": "match_manifest_state"
     },
     {
+      "id": "mod-random-enchants",
+      "name": "Random Enchants",
+      "labels": [
+        "Random Enchants"
+      ],
+      "source_url": "https://github.com/azerothcore/mod-random-enchants",
+      "clone_url": "https://github.com/azerothcore/mod-random-enchants.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": "19-03-2025",
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": "19-03-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
       "id": "mod-rdf-expansion",
       "name": "RDF Expansion",
       "labels": [
@@ -980,6 +1272,69 @@
         {
           "section_state": "enabled",
           "added_on": "19-03-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-rotation",
+      "name": "Rotation",
+      "labels": [
+        "Rotation"
+      ],
+      "source_url": "https://github.com/Maddnes95/mod-rotation",
+      "clone_url": "https://github.com/Maddnes95/mod-rotation.git",
+      "install": true,
+      "enabled": true,
+      "optional": false,
+      "added_on": "03-10-2026",
+      "listed_in": [
+        {
+          "section_state": "enabled",
+          "added_on": "03-10-2026"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-server-auto-shutdown",
+      "name": "Server Auto Shutdown",
+      "labels": [
+        "Server Auto Shutdown"
+      ],
+      "source_url": "https://github.com/azerothcore/mod-server-auto-shutdown",
+      "clone_url": "https://github.com/azerothcore/mod-server-auto-shutdown.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": "21-05-2025",
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": "21-05-2025"
+        }
+      ],
+      "source_conflict": false,
+      "config_policy": "match_manifest_state"
+    },
+    {
+      "id": "mod-skip-dk-starting-area",
+      "name": "Skip Death Knight Starting Area",
+      "labels": [
+        "Skip Death Knight Starting Area"
+      ],
+      "source_url": "https://github.com/azerothcore/mod-skip-dk-starting-area",
+      "clone_url": "https://github.com/azerothcore/mod-skip-dk-starting-area.git",
+      "install": true,
+      "enabled": false,
+      "optional": false,
+      "added_on": null,
+      "listed_in": [
+        {
+          "section_state": "disabled_by_default",
+          "added_on": null
         }
       ],
       "source_conflict": false,
@@ -1070,21 +1425,21 @@
       "config_policy": "match_manifest_state"
     },
     {
-      "id": "mod_weather_vibe",
-      "name": "Weather Vibe",
+      "id": "mod-war-effort",
+      "name": "Ahn'Qiraj War Effort",
       "labels": [
-        "Weather Vibe"
+        "Ahn'Qiraj War Effort"
       ],
-      "source_url": "https://github.com/hermensbas/mod_weather_vibe",
-      "clone_url": "https://github.com/hermensbas/mod_weather_vibe.git",
+      "source_url": "https://github.com/azerothcore/mod-war-effort",
+      "clone_url": "https://github.com/azerothcore/mod-war-effort.git",
       "install": true,
-      "enabled": true,
+      "enabled": false,
       "optional": false,
-      "added_on": "23-09-2025",
+      "added_on": "19-03-2025",
       "listed_in": [
         {
-          "section_state": "enabled",
-          "added_on": "23-09-2025"
+          "section_state": "disabled_by_default",
+          "added_on": "19-03-2025"
         }
       ],
       "source_conflict": false,
@@ -1112,294 +1467,21 @@
       "config_policy": "match_manifest_state"
     },
     {
-      "id": "mod-account-mounts",
-      "name": "Account Mounts",
+      "id": "mod_weather_vibe",
+      "name": "Weather Vibe",
       "labels": [
-        "Account Mounts"
+        "Weather Vibe"
       ],
-      "source_url": "https://github.com/azerothcore/mod-account-mounts",
-      "clone_url": "https://github.com/azerothcore/mod-account-mounts.git",
+      "source_url": "https://github.com/hermensbas/mod_weather_vibe",
+      "clone_url": "https://github.com/hermensbas/mod_weather_vibe.git",
       "install": true,
-      "enabled": false,
+      "enabled": true,
       "optional": false,
-      "added_on": "21-06-2025",
+      "added_on": "23-09-2025",
       "listed_in": [
         {
-          "section_state": "disabled_by_default",
-          "added_on": "21-06-2025"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-war-effort",
-      "name": "Ahn'Qiraj War Effort",
-      "labels": [
-        "Ahn'Qiraj War Effort"
-      ],
-      "source_url": "https://github.com/azerothcore/mod-war-effort",
-      "clone_url": "https://github.com/azerothcore/mod-war-effort.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": "19-03-2025",
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": "19-03-2025"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-aoe-loot",
-      "name": "AOE Loot (Fixed Fork)",
-      "labels": [
-        "AOE Loot (Fixed Fork)"
-      ],
-      "source_url": "https://github.com/TerraByte-tbwps/mod-aoe-loot",
-      "clone_url": "https://github.com/TerraByte-tbwps/mod-aoe-loot.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": "21-05-2025",
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": "21-05-2025"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-cfbg",
-      "name": "Cross Faction Battlegrounds",
-      "labels": [
-        "Cross Faction Battlegrounds"
-      ],
-      "source_url": "https://github.com/azerothcore/mod-cfbg",
-      "clone_url": "https://github.com/azerothcore/mod-cfbg.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": "19-03-2025",
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": "19-03-2025"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-leech",
-      "name": "Leech",
-      "labels": [
-        "Leech"
-      ],
-      "source_url": "https://github.com/ZhengPeiRu21/mod-leech",
-      "clone_url": "https://github.com/ZhengPeiRu21/mod-leech.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": null,
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": null
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-money-for-kills",
-      "name": "Money for Kills",
-      "labels": [
-        "Money for Kills"
-      ],
-      "source_url": "https://github.com/azerothcore/mod-money-for-kills",
-      "clone_url": "https://github.com/azerothcore/mod-money-for-kills.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": null,
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": null
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-no-hearthstone-cooldown",
-      "name": "No Heartstone Cooldown",
-      "labels": [
-        "No Heartstone Cooldown"
-      ],
-      "source_url": "https://github.com/BytesGalore/mod-no-hearthstone-cooldown",
-      "clone_url": "https://github.com/BytesGalore/mod-no-hearthstone-cooldown.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": null,
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": null
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-npc-free-professions",
-      "name": "NPC Free Professions",
-      "labels": [
-        "NPC Free Professions"
-      ],
-      "source_url": "https://github.com/azerothcore/mod-npc-free-professions",
-      "clone_url": "https://github.com/azerothcore/mod-npc-free-professions.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": "19-03-2025",
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": "19-03-2025"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-ollama-chat",
-      "name": "Ollama Chat",
-      "labels": [
-        "Ollama Chat"
-      ],
-      "source_url": "https://github.com/DustinHendrickson/mod-ollama-chat",
-      "clone_url": "https://github.com/DustinHendrickson/mod-ollama-chat.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": "23-07-2026",
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": "23-07-2026"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-player-bot-level-brackets",
-      "name": "Playerbot Level Brackets",
-      "labels": [
-        "Playerbot Level Brackets"
-      ],
-      "source_url": "https://github.com/DustinHendrickson/mod-player-bot-level-brackets",
-      "clone_url": "https://github.com/DustinHendrickson/mod-player-bot-level-brackets.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": "21-06-2025",
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": "21-06-2025"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-pvp-zones",
-      "name": "PVP Zones",
-      "labels": [
-        "PVP Zones"
-      ],
-      "source_url": "https://github.com/azerothcore/mod-pvp-zones",
-      "clone_url": "https://github.com/azerothcore/mod-pvp-zones.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": null,
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": null
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-random-enchants",
-      "name": "Random Enchants",
-      "labels": [
-        "Random Enchants"
-      ],
-      "source_url": "https://github.com/azerothcore/mod-random-enchants",
-      "clone_url": "https://github.com/azerothcore/mod-random-enchants.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": "19-03-2025",
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": "19-03-2025"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-server-auto-shutdown",
-      "name": "Server Auto Shutdown",
-      "labels": [
-        "Server Auto Shutdown"
-      ],
-      "source_url": "https://github.com/azerothcore/mod-server-auto-shutdown",
-      "clone_url": "https://github.com/azerothcore/mod-server-auto-shutdown.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": "21-05-2025",
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": "21-05-2025"
-        }
-      ],
-      "source_conflict": false,
-      "config_policy": "match_manifest_state"
-    },
-    {
-      "id": "mod-skip-dk-starting-area",
-      "name": "Skip Death Knight Starting Area",
-      "labels": [
-        "Skip Death Knight Starting Area"
-      ],
-      "source_url": "https://github.com/azerothcore/mod-skip-dk-starting-area",
-      "clone_url": "https://github.com/azerothcore/mod-skip-dk-starting-area.git",
-      "install": true,
-      "enabled": false,
-      "optional": false,
-      "added_on": null,
-      "listed_in": [
-        {
-          "section_state": "disabled_by_default",
-          "added_on": null
+          "section_state": "enabled",
+          "added_on": "23-09-2025"
         }
       ],
       "source_conflict": false,

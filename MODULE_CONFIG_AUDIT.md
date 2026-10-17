@@ -1,6 +1,6 @@
 # Pinned module master-switch audit
 
-This audit is generated from the 2026-10-04 materialized source checkouts at the commits in `modules.lock.json`. Each listed master key was checked in its pinned `.conf.dist` and referenced by pinned C++ source. Other `Enable`-looking values are subfeatures and are intentionally not flipped. The runtime values are applied from `modules.manifest.json`; the manifest is authoritative for enabled/disabled state.
+This audit is generated from the 2026-10-17 materialized source checkouts at the latest default-branch commits in `modules.lock.json`. Each listed master key was checked in its pinned `.conf.dist` and referenced by pinned C++ source. Other `Enable`-looking values are subfeatures and are intentionally not flipped. The runtime values are applied from `modules.manifest.json`; the manifest is authoritative for enabled/disabled state.
 
 ## How AzerothCore loads the module configuration files
 
@@ -33,15 +33,18 @@ The zero-context patch passed `git apply --check --unidiff-zero` against core SH
 
 ## Master switches
 
-`Target` is `1`/`true` for enabled and `0`/`false` for disabled. The `Upstream` column is the pinned template default.
+`Target` is `1`/`true` for enabled and `0`/`false` for disabled. The `Upstream` column is the current pinned template default; only the master key is changed by the applicator.
 
 | Target | Module ID | Source `.conf.dist` | Master key | Upstream | Target value | Code reference |
 |---|---|---|---|---:|---:|---|
-| ON | `mod-1v1-arena` | `conf/1v1arena.conf.dist` | `Arena1v1.Enable` | `1` | `1` | `src/cs_1v1arena.cpp:52` |
-| ON | `mod-account-achievements` | `conf/mod_achievements.conf.dist` | `Account.Achievements.Enable` | `1` | `1` | `src/mod_achievements.cpp:50` |
-| ON | `mod-autobalance` | `conf/AutoBalance.conf.dist` | `AutoBalance.Enable.Global` | `1` | `1` | `src/ABWorldScript.cpp:102` |
-| ON | `mod-auto-revive` | `conf/AutoRevive.conf.dist` | `AutoRevive.Enable` | `1` | `1` | `src/AutoRevive.cpp:18` |
 | ON | `BGQueueChecker` | `conf/bgqueuechecker.conf.dist` | `BGQueueChecker.Enable` | `0` | `1` | `src/BGQueueChecker.cpp:13` |
+| ON | `mod-1v1-arena` | `conf/1v1arena.conf.dist` | `Arena1v1.Enable` | `1` | `1` | `src/cs_1v1arena.cpp:52` |
+| ON | `mod-TimeIsTime` | `conf/mod-time_is_time.conf.dist` | `TimeIsTime.Enable` | `1` | `1` | `src/TimeIsTime.cpp:27` |
+| ON | `mod-account-achievements` | `conf/mod_achievements.conf.dist` | `Account.Achievements.Enable` | `1` | `1` | `src/mod_achievements.cpp:50` |
+| ON | `mod-ale` | `conf/mod_ale.conf.dist` | `ALE.Enabled` | `true` | `true` | `src/LuaEngine/ALEConfig.cpp:20` |
+| ON | `mod-auto-revive` | `conf/AutoRevive.conf.dist` | `AutoRevive.Enable` | `1` | `1` | `src/AutoRevive.cpp:18` |
+| ON | `mod-autobalance` | `conf/AutoBalance.conf.dist` | `AutoBalance.Enable.Global` | `1` | `1` | `src/ABWorldScript.cpp:102` |
+| ON | `mod-autosort` | `conf/mod_autosort.conf.dist` | `AutoSort.Enable` | `1` | `1` | `src/mod_autosort_config.cpp:17` |
 | ON | `mod-boss-announcer` | `conf/mod_boss_announcer.conf.dist` | `Boss.Announcer.Enable` | `1` | `1` | `src/mod_boss_announcer.cpp:241` |
 | ON | `mod-breaking-news-override` | `conf/breakingnews.conf.dist` | `BreakingNews.Enable` | `0` | `1` | `src/BreakingNews.cpp:146` |
 | ON | `mod-challenge-modes` | `conf/challenge_modes.conf.dist` | `ChallengeModes.Enable` | `1` | `1` | `src/ChallengeModes.cpp:263` |
@@ -52,8 +55,8 @@ The zero-context patch passed `git apply --check --unidiff-zero` against core SH
 | ON | `mod-dynamic-xp` | `conf/dynamicxp.conf.dist` | `Dynamic.XP.Rate` | `1` | `1` | `src/dynamicxp.cpp:23` |
 | ON | `mod-fireworks-on-level` | `conf/mod_customserver.conf.dist` | `CustomServer.FireworkLevels` | `1` | `1` | `src/mod_customserver.cpp:84` |
 | ON | `mod-fly-anywhere` | `conf/fly-anywhere.conf.dist` | `FlyAnywhere.Enabled` | `true` | `true` | `src/FlyAnywhereScript.cpp:25` |
-| ON | `mod-individual-progression` | `conf/individualProgression.conf.dist` | `IndividualProgression.Enable` | `1` | `1` | `src/IndividualProgression.cpp:1045` |
-| ON | `mod-individual-xp` | `conf/individual_xp.conf.dist` | `IndividualXp.Enabled` | `true` | `true` | `src/individual_xp.cpp:45` |
+| ON | `mod-individual-progression` | `conf/individualProgression.conf.dist` | `IndividualProgression.Enable` | `1` | `1` | `src/IndividualProgression.cpp:1093` |
+| ON | `mod-individual-rates` | `conf/individual_rates.conf.dist` | `IndividualRates.Enabled` | `1` | `1` | `src/individual_rates.cpp:746` |
 | ON | `mod-instance-reset` | `conf/instance-reset.conf.dist` | `instanceReset.Enable` | `true` | `true` | `src/instance_reset.cpp:239` |
 | ON | `mod-learn-spells` | `conf/mod_learnspells.conf.dist` | `LearnSpells.Enable` | `1` | `1` | `src/mod_learnspells.cpp:33` |
 | ON | `mod-morphsummon` | `conf/morphsummon.conf.dist` | `MorphSummon.Enabled` | `1` | `1` | `src/morphsummon.cpp:528` |
@@ -62,29 +65,29 @@ The zero-context patch passed `git apply --check --unidiff-zero` against core SH
 | ON | `mod-npc-enchanter` | `conf/npc_enchanter.conf.dist` | `Enchanter.Enable` | `1` | `1` | `src/npc_enchanter.cpp:213` |
 | ON | `mod-npc-spectator` | `conf/npc_spectator.conf.dist` | `NpcArenaSpectator.Enable` | `1` | `1` | `src/ArenaSpectatorNPC_SC.cpp:66` |
 | ON | `mod-phased-duels` | `conf/mod_phased_duels.conf.dist` | `PhasedDuels.Enable` | `1` | `1` | `src/mod_phased_duels.cpp:27` |
-| ON | `mod-playerbots` | `conf/playerbots.conf.dist` | `AiPlayerbot.Enabled` | `1` | `1` | `src/PlayerbotAIConfig.cpp:83` |
+| ON | `mod-playerbots` | `conf/playerbots.conf.dist` | `Playerbots.Enabled` | `1` | `1` | `src/PlayerbotAIConfig.cpp:83` |
 | ON | `mod-pvp-titles` | `conf/mod_pvptitles.conf.dist` | `PvPTitles.Enable` | `0` | `1` | `src/mod_pvp_titles.cpp:123` |
 | ON | `mod-queue-list-cache` | `conf/QueueListCache.conf.dist` | `QLC.Enable` | `1` | `1` | `src/QueueListCache.cpp:24` |
 | ON | `mod-quick-teleport` | `conf/quick_teleport.conf.dist` | `QuickTeleport.enabled` | `true` | `true` | `src/QuickTeleport.cpp:38` |
 | ON | `mod-reward-played-time` | `conf/reward_system.conf.dist` | `RewardSystemEnable` | `1` | `1` | `src/reward_system.cpp:29` |
+| ON | `mod-rotation` | `conf/mod_rotation.conf.dist` | `Rotation.Enable` | `1` | `1` | `src/Rotation.cpp:238` |
 | ON | `mod-solo-lfg` | `conf/SoloLfg.conf.dist` | `SoloLFG.Enable` | `1` | `1` | `src/Lfg_Solo.cpp:33` |
-| ON | `mod-TimeIsTime` | `conf/mod-time_is_time.conf.dist` | `TimeIsTime.Enable` | `1` | `1` | `src/TimeIsTime.cpp:27` |
 | ON | `mod-transmog` | `conf/transmog.conf.dist` | `Transmogrification.Enable` | `1` | `1` | `src/Transmogrification.cpp:1101` |
 | ON | `mod_weather_vibe` | `conf/mod_weather_vibe.conf.dist` | `WeatherVibe.Enable` | `1` | `1` | `src/core/mod_wv_core.cpp:55` |
 | OFF | `mod-account-mounts` | `conf/mod_account_mount.conf.dist` | `Account.Mounts.Enable` | `1` | `0` | `src/mod_account_mount.cpp:41` |
-| OFF | `mod-war-effort` | `conf/mod_aq_war_effort.conf.dist` | `ModWarEffort.Enable` | `0` | `0` | `src/WarEffort.h:286` |
 | OFF | `mod-aoe-loot` | `conf/mod_aoe_loot.conf.dist` | `AOELoot.Enable` | `1` | `0` | `src/aoe_loot.cpp:46` |
 | OFF | `mod-cfbg` | `conf/CFBG.conf.dist` | `CFBG.Enable` | `1` | `0` | `src/CFBG.cpp:100` |
 | OFF | `mod-leech` | `conf/leech.conf.dist` | `Leech.Enable` | `1` | `0` | `src/Leech.cpp:50` |
 | OFF | `mod-money-for-kills` | `conf/mod_moneyforkills.conf.dist` | `MFK.Enable` | `1` | `0` | `src/mod_moneyforkills.cpp:96` |
 | OFF | `mod-no-hearthstone-cooldown` | `conf/mod_no_hearthstone_cooldown.conf.dist` | `NoHearthstoneCooldown.Enable` | `1` | `0` | `src/NoHearthstoneCooldown.cpp:33` |
 | OFF | `mod-npc-free-professions` | `conf/mod_npc_free_professions.conf.dist` | `NpcFreeProfessions.Enable` | `1` | `0` | `src/ProfessionNPC.cpp:32` |
-| OFF | `mod-ollama-chat` | `conf/mod_ollama_chat.conf.dist` | `OllamaChat.Enable` | `1` | `0` | `src/mod-ollama-chat_config.cpp:531` |
+| OFF | `mod-ollama-chat` | `conf/mod_ollama_chat.conf.dist` | `OllamaChat.Enable` | `1` | `0` | `src/mod-ollama-chat_capability.cpp:204` |
 | OFF | `mod-player-bot-level-brackets` | `conf/mod_player_bot_level_brackets.conf.dist` | `BotLevelBrackets.Enabled` | `1` | `0` | `src/mod-player-bot-level-brackets.cpp:116` |
 | OFF | `mod-pvp-zones` | `conf/mod_pvp_zones.conf.dist` | `pvp_zones.Enable` | `1` | `0` | `src/ZoneScript.cpp:61` |
 | OFF | `mod-random-enchants` | `conf/random_enchants.conf.dist` | `RandomEnchants.Enable` | `1` | `0` | `src/random_enchants.cpp:6` |
 | OFF | `mod-server-auto-shutdown` | `conf/ServerAutoShutdown.conf.dist` | `ServerAutoShutdown.Enabled` | `0` | `0` | `src/ServerAutoShutdown.cpp:87` |
-| OFF | `mod-skip-dk-starting-area` | `conf/skip_dk_module.conf.dist` | `Skip.Deathknight.Starter.Enable` | `1` | `0` | `src/SkipDK.cpp:163` |
+| OFF | `mod-skip-dk-starting-area` | `conf/skip_dk_module.conf.dist` | `Skip.Deathknight.Starter.Enable` | `1` | `0` | `src/SkipDK.cpp:189` |
+| OFF | `mod-war-effort` | `conf/mod_aq_war_effort.conf.dist` | `ModWarEffort.Enable` | `0` | `0` | `src/WarEffort.h:286` |
 
 ## Explicit upstream-default policies
 
@@ -97,12 +100,13 @@ Dungeon Clear is enabled at `DungeonClear.Enable = 1`; its duplicate disabled so
 
 ## Modules with no effective module-wide switch
 
-These modules are still present/compiled. No key is invented or flipped; their master-state limitation or module-specific behavior is recorded below. Some have subordinate tuning options that remain at upstream defaults.
+These 17 modules are still present/compiled. No key is invented or flipped; their master-state limitation or module-specific behavior is recorded below. Some have subordinate tuning options that remain at upstream defaults.
 
 | Target | Module ID | Config template | Finding |
 |---|---|---|---|
 | ON | `mod-ah-bot` | `conf/mod_ahbot.conf.dist` | No module-wide enable switch. AuctionHouseBot.EnableSeller and .EnableBuyer are separate operational roles and both default to 0; leave them unchanged until seller/buyer accounts, SQL, and economy behavior are deliberately configured. |
 | ON | `mod-better-item-reloading` | — | No module .conf.dist or module-wide runtime switch was found; its source hooks are active when the module is compiled. |
+| ON | `mod-dual-tracking` | — | The pinned module has no config template or module-wide runtime switch; it is active when compiled. |
 | ON | `mod-duel-reset` | `conf/duelreset.conf.dist` | The config contains cooldown, health/mana, and zone/area behavior settings but no module-wide switch. |
 | ON | `mod-emblem-transfer` | `conf/emblem_transfer.conf.dist` | The config contains transfer amount, penalty, and per-emblem options but no module-wide switch. |
 | ON | `mod-guildhouse` | `conf/mod_guildhouse.conf.dist` | The config contains guildhouse service prices/ranks but no module-wide switch. |

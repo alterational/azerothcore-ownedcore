@@ -2,7 +2,7 @@
 
 A reproducible build workspace for the user's AzerothCore Playerbots fork and the OwnedCore module list, with City Life added. The build repository tracks immutable source pins and reviewed config applicators; materialized source and build output stay out of Git.
 
-- **66 modules:** 52 intended enabled and 14 initially disabled. Every entry remains `install: true`; disabled modules are still checked out and compiled.
+- **70 modules:** 56 intended enabled and 14 initially disabled. Every entry remains `install: true`; disabled modules are still checked out and compiled.
 - [Module inventory and immutable commits](MODULES.md)
 - [Configuration policy and application](docs/CONFIGURATION.md)
 - [SQL and runtime setup](docs/SQL_SETUP.md)
@@ -12,9 +12,11 @@ A reproducible build workspace for the user's AzerothCore Playerbots fork and th
 
 ## Source pins
 
-The core is the user's fork `alterational/azerothcore-wotlk`, branch `Playerbot`, currently pinned at `f19a18799a35f7c24bdcdc9ea399c601f166259b`. The core branch tip was verified to match this SHA. The required core `worldserver.conf.dist` edits are prepared in [`patches/azerothcore-worldserver-defaults.patch`](patches/azerothcore-worldserver-defaults.patch), but still need a commit in the personal core fork before this workspace can use the final core pin. Module SHAs remain fixed in `modules.lock.json`.
+The core remains the user's fork `alterational/azerothcore-wotlk`, branch `Playerbot`, pinned at `f19a18799a35f7c24bdcdc9ea399c601f166259b`. The required core `worldserver.conf.dist` edits are prepared in [`patches/azerothcore-worldserver-defaults.patch`](patches/azerothcore-worldserver-defaults.patch), but still need a commit in the personal core fork before this workspace can build. Module locks were refreshed on 2026-10-17 to the current default-branch `HEAD` for all 70 listed sources; the lock still pins each resolved commit exactly. This refresh did not change the core SHA and has not yet been compile-tested.
 
 Learn Spells uses the approved `azerothcore/mod-learn-spells` repository. Dungeon Clear remains enabled at its upstream `DungeonClear.Enable = 1`; City Life remains enabled at its upstream `CityLife.Enable = 1`.
+
+An explicitly approved module-only pin refresh uses `python3 scripts/refresh_lock.py --modules-only`. It resolves each installed module's current default-branch `HEAD`, preserves the core pin exactly, and aborts rather than writing a partial refresh if a module source cannot be resolved. Refreshed pins are candidates—not compatibility/build proof. The default command without `--modules-only` also refreshes the configured core branch.
 
 ## Quick start
 
@@ -22,6 +24,8 @@ Learn Spells uses the approved `azerothcore/mod-learn-spells` repository. Dungeo
 python3 scripts/validate_project.py
 python3 scripts/materialize.py
 python3 scripts/validate_project.py --check-checkout
+python3 scripts/apply_source_patches.py --apply
+python3 scripts/apply_source_patches.py --check
 python3 scripts/apply_module_config.py --apply --source-templates
 python3 scripts/apply_additional_settings.py --apply --source-templates
 python3 scripts/apply_module_config.py --check --source-templates

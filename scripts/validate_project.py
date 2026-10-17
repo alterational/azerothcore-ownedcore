@@ -129,7 +129,7 @@ def check_config_mapping(manifest: dict, lock: dict) -> tuple[int, int, int]:
     actual_upstream = {mid for mid, entry in mapped.items() if entry.get("status") == "upstream_default"}
     if actual_upstream != expected_upstream:
         fail(f"Only City Life and Dungeon Clear may use leave_upstream_default; got {sorted(actual_upstream)}")
-    if counts != {"master_switch": 48, "upstream_default": 2, "no_master_switch": 16}:
+    if counts != {"master_switch": 51, "upstream_default": 2, "no_master_switch": 17}:
         fail(f"Unexpected config map classification counts: {counts}")
     if by_id["mod-dungeon-clear"].get("enabled") is not True:
         fail("Dungeon Clear must not be disabled")
@@ -237,7 +237,7 @@ def check() -> tuple[dict, dict]:
         if not isinstance(module.get("enabled"), bool):
             fail(f"{module_id}: 'enabled' must be true or false")
         if module.get("install") is not True:
-            fail(f"{module_id}: all 66 requested module sources must remain installable")
+            fail(f"{module_id}: all requested module sources must remain installable")
         enabled_count += int(module["enabled"])
         disabled_count += int(not module["enabled"])
         clone_url = module.get("clone_url")
@@ -257,8 +257,8 @@ def check() -> tuple[dict, dict]:
     if len(ids) != len(set(ids)):
         duplicates = sorted({module_id for module_id in ids if ids.count(module_id) > 1})
         fail("Duplicate module IDs: " + ", ".join(duplicates))
-    if len(modules) != 66 or enabled_count != 52 or disabled_count != 14:
-        fail(f"Expected 66 modules (52 enabled, 14 initially disabled), got {len(modules)} ({enabled_count} enabled, {disabled_count} disabled)")
+    if len(modules) != 70 or enabled_count != 56 or disabled_count != 14:
+        fail(f"Expected 70 modules (56 enabled, 14 initially disabled), got {len(modules)} ({enabled_count} enabled, {disabled_count} disabled)")
     if set(ids) != set(lock_modules):
         missing = sorted(set(ids) - set(lock_modules))
         extra = sorted(set(lock_modules) - set(ids))
@@ -292,8 +292,12 @@ def check() -> tuple[dict, dict]:
     if not dungeon.get("source_conflict"):
         fail("Dungeon Clear source-list duplicate/resolution metadata was lost")
     learn = by_id.get("mod-learn-spells")
-    if not learn or canonical_url(learn.get("clone_url", "")) != canonical_url(EXPECTED_LEARN_SPELLS_URL):
-        fail("Learn Spells must use the user-approved azerothcore/mod-learn-spells replacement")
+    if (
+        not learn
+        or canonical_url(learn.get("clone_url", "")) != canonical_url(EXPECTED_LEARN_SPELLS_URL)
+        or learn.get("source_override")
+    ):
+        fail("Learn Spells must use the approved azerothcore/mod-learn-spells source without a stale override")
 
     master_count, default_count, no_master_count = check_config_mapping(manifest, lock)
     additional_count = check_additional_settings_mapping(manifest, lock)

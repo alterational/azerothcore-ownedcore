@@ -15,7 +15,7 @@
     },
     {
       "module_id": "mod-TimeIsTime",
-      "source_commit": "abfb3a7a031c168c481642604c1389a5d92f4499",
+      "source_commit": "155aaf1cc61deb7ec89e4a9c828bb35ef4926418",
       "source_config": "conf/mod-time_is_time.conf.dist",
       "runtime_config": "mod-time_is_time.conf",
       "key": "TimeIsTime.SpeedRate",

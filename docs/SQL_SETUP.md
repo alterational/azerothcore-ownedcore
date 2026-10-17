@@ -28,7 +28,7 @@ Compilation does not import SQL. At server startup, the pinned core database upd
 
 **Important:** the updater enumerates compiled module names and does not gate SQL migrations on a module’s runtime `Enable`/`Enabled` switch. Because this project compiles all installed module sources, automatic SQL for the 14 initially-disabled modules can still be applied on server startup. Review/backup each target database before starting a production server; runtime-off is not equivalent to “no schema changes.” This project never connects to a database.
 
-Pinned module SQL directory scan (paths under `data/sql`; `auth`/`world`/`characters` folders are read by the core updater; Playerbots uses its own updater):
+Pinned module SQL directory scan (latest locked module sources resolved 2026-10-17; paths under `data/sql`; `auth`/`world`/`characters` folders are read by the core updater; Playerbots uses its own updater):
 
 | Module ID | Auto-discovered directories | Nonautomatic/optional SQL directories |
 |---|---|---|
@@ -42,7 +42,7 @@ Pinned module SQL directory scan (paths under `data/sql`; `auth`/`world`/`charac
 | `mod-guildhouse` | db-characters, db-world | — |
 | `mod-improved-bank` | db-characters, db-world | — |
 | `mod-individual-progression` | world | optional/sql (opt-in) |
-| `mod-individual-xp` | db-characters, db-world | — |
+| `mod-individual-rates` | db-characters, db-world | — |
 | `mod-instance-reset` | db-world | — |
 | `mod-low-level-rbg` | db-world | — |
 | `mod-morphsummon` | db-characters, db-world | — |
@@ -57,7 +57,7 @@ Pinned module SQL directory scan (paths under `data/sql`; `auth`/`world`/`charac
 | `mod-reagent-bank` | db-characters, db-world | — |
 | `mod-reward-played-time` | db-characters | — |
 | `mod-top-arena` | db-world | — |
-| `mod-transmog` | db-auth, db-characters, db-world | updates |
+| `mod-transmog` | db-auth, db-characters, db-world | — |
 | `mod-war-effort` | db-characters, db-world | — |
 | `mod-cfbg` | db-world | — |
 | `mod-npc-free-professions` | db-world | — |
@@ -72,7 +72,7 @@ The table is a path classification from the locked source checkouts, not a recor
 
 - **City Life:** `data/sql/manual/world_city_life.sql` — manual world import described above.
 - **Individual Progression (enabled):** 22 optional patches under `core/modules/mod-individual-progression/optional/sql/world/`. The module README marks these as optional; they are outside `data/sql/world` and are not applied by the updater. Do not choose or apply them without an explicit gameplay decision and database review.
-- **Transmog (enabled):** `core/modules/mod-transmog/data/sql/updates/world/2026_05_09_transmog_set_disclaimer.sql` is in a nonstandard `data/sql/updates/world` tree rather than the pinned updater’s immediate `db-world`/`world` layout. The other `db-auth`, `db-characters`, and `db-world` directories are automatically discovered. Treat this one file as not automatically discovered; inspect the module’s instructions and decide/import separately only with backup and authorization.
+- **Transmog (enabled):** the refreshed pin stores its current SQL files under the automatically discovered `db-auth`, `db-characters`, and `db-world` directories; the previously noted nonstandard `data/sql/updates/world` file is no longer present in this checkout.
 - **1v1 Arena (enabled):** `data/sql/delete/1v1_delete.sql` is a deletion/removal script, not an installation migration. It is not discovered by the normal updater and must not be run for setup.
 - **Playerbots:** `data/sql/playerbots/create/create_mysql.sql` and the `drop_mysql*.sql` examples are not automatically applied. The pinned module updater can create its configured DB and populate/update it when enabled; the sample create script hard-codes an `acore` user and broad grants, and drop scripts are destructive. Do not run them blindly.
 

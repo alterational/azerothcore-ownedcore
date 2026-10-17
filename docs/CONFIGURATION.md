@@ -1,10 +1,10 @@
 # Runtime module and server configuration
 
-`modules.manifest.json` is the module target state: 52 sources enabled and 14 initially disabled. All 66 remain installed in `core/modules`; runtime-off does not omit a source from CMake or the build.
+`modules.manifest.json` is the module target state: 56 sources enabled and 14 initially disabled. All 70 remain installed in `core/modules`; runtime-off does not omit a source from CMake or the build.
 
 ## Audited module maps
 
-`config/module-switches.json` is the reviewed 66-module master-switch map: 48 source-verified switches, two approved upstream-default policies (City Life and Dungeon Clear), and 16 documented modules without an effective module-wide switch. It sets `Dynamic.XP.Rate = 1` for enabled Dynamic XP. See [`MODULE_CONFIG_AUDIT.md`](../MODULE_CONFIG_AUDIT.md) for the full table.
+`config/module-switches.json` is the reviewed 70-module master-switch map: 51 source-verified switches, two approved upstream-default policies (City Life and Dungeon Clear), and 17 documented modules without an effective module-wide switch. It sets `Dynamic.XP.Rate = 1` for enabled Dynamic XP. See [`MODULE_CONFIG_AUDIT.md`](../MODULE_CONFIG_AUDIT.md) for the full table.
 
 `config/additional-module-settings.json` records two additional module settings:
 
@@ -55,7 +55,7 @@ The default active directory is `core/env/dist/etc`; pass `--config-dir <path>` 
 
 ## Decisions and limits
 
-- All 66 module sources are compiled even when their runtime master switch is set to `0`.
+- All 70 module sources are compiled even when their runtime master switch is set to `0`.
 - **Dungeon Clear stays enabled** at `DungeonClear.Enable = 1`; its duplicate disabled entry was stale. **City Life stays enabled** at its pinned default `CityLife.Enable = 1`.
 - Modules with no master switch are documented instead of receiving invented keys. AHBot seller/buyer toggles stay at their upstream `0` defaults.
 - Other prerequisites and setup are described in the pinned module READMEs and [`SQL_SETUP.md`](SQL_SETUP.md). They do not justify changing unspecified config defaults.
