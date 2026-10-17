@@ -1,15 +1,38 @@
 diff --git a/src/server/apps/worldserver/worldserver.conf.dist b/src/server/apps/worldserver/worldserver.conf.dist
 --- a/src/server/apps/worldserver/worldserver.conf.dist
 +++ b/src/server/apps/worldserver/worldserver.conf.dist
+@@ -678 +678 @@
+-Appender.Server=2,5,0,Server.log,w
++Appender.Server=2,5,8,Server.log,w
+@@ -679 +679 @@
+-Appender.Playerbots=2,5,0,Playerbots.log,w
++Appender.Playerbots=2,5,8,Playerbots.log,w
+@@ -681 +681 @@
+-Appender.Errors=2,2,0,Errors.log,w
++Appender.Errors=2,2,8,Errors.log,w
 @@ -1334 +1334 @@
 -MapUpdate.Threads = 1
 +MapUpdate.Threads = 4
 @@ -1437 +1437 @@
 -ActivateWeather = 1
 +ActivateWeather = 0
+@@ -1498,2 +1498,2 @@
+-#        Default:     1 - (Enabled)
+-#                     0 - (Disabled)
++#        Default:     0 - (Disabled)
++#                     1 - (Enabled)
+@@ -1501 +1501 @@
+-Die.Command.Mode = 1
++Die.Command.Mode = 0
 @@ -2118 +2118 @@
 -EnablePlayerSettings = 0
 +EnablePlayerSettings = 1
 @@ -2827 +2827 @@
 -DBC.EnforceItemAttributes = 1
 +DBC.EnforceItemAttributes = 0
+@@ -3469 +3469 @@
+-#        Default:     7
++#        Default:     5
+@@ -3471 +3471 @@
+-DungeonFinder.OptionsMask = 7
++DungeonFinder.OptionsMask = 5

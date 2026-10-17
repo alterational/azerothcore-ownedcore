@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Check the pinned core config without editing the core checkout.
 
-While the core fork patch is pending, this confirms the observed upstream
-values and reports the outstanding fork change. Once committed, set the map's
-status to `pinned_in_core_fork`, update its core commit, and the same checker
-requires all target values. `--require-target` is used by Windows build/release
+While the core fork patches are pending, this confirms the observed values in both pinned server templates and reports outstanding changes. Once committed, set both maps' status to `pinned_in_core_fork`, update their core commit, and the same checker requires all target values. `--require-target` is used by Windows build/release
 jobs so an artifact cannot be produced from an unupdated core pin.
 """
 from __future__ import annotations
@@ -18,7 +15,23 @@ from config_assignments import assignment, canonical_value, read_config
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "modules.lock.json"
-SETTINGS_PATH = ROOT / "config" / "core-worldserver-defaults.json"
+WORLD_SETTINGS_PATH = ROOT / "config" / "core-worldserver-defaults.json"
+AUTH_SETTINGS_PATH = ROOT / "config" / "core-authserver-defaults.json"
+WORLD_EXPECTED = {
+    "MapUpdate.Threads": ("1", "4"),
+    "EnablePlayerSettings": ("0", "1"),
+    "DBC.EnforceItemAttributes": ("1", "0"),
+    "ActivateWeather": ("1", "0"),
+    "Appender.Server": ("2,5,0,Server.log,w", "2,5,8,Server.log,w"),
+    "Appender.Playerbots": ("2,5,0,Playerbots.log,w", "2,5,8,Playerbots.log,w"),
+    "Appender.Errors": ("2,2,0,Errors.log,w", "2,2,8,Errors.log,w"),
+    "Die.Command.Mode": ("1", "0"),
+    "DungeonFinder.OptionsMask": ("5", "5"),
+}
+AUTH_EXPECTED = {
+    "Appender.Auth": ("2,5,0,Auth.log,w", "2,5,8,Auth.log,w"),
+}
+WORLD_PATCH_BASE_DEFAULTS = {"DungeonFinder.OptionsMask": "7"}
 
 
 def fail(message: str) -> None:
@@ -35,22 +48,35 @@ def load_json(path: Path) -> dict:
     return value
 
 
-def validate_settings(settings: dict, core_commit: str) -> None:
+def validate_settings(
+    settings: dict,
+    core_commit: str,
+    expected: dict[str, tuple[str, str]],
+    expected_source: str,
+    label: str,
+) -> None:
     if settings.get("core_commit") != core_commit:
-        fail("Core defaults map SHA does not match modules.lock.json; update it only after the fork commit is pinned")
+        fail(f"{label} defaults map SHA does not match modules.lock.json; update it only after the fork commit is pinned")
     status = settings.get("status")
     if status not in {"pending_core_fork_commit", "pinned_in_core_fork"}:
-        fail(f"Unknown core defaults status: {status!r}")
+        fail(f"Unknown {label} defaults status: {status!r}")
+    if settings.get("source_config") != expected_source:
+        fail(f"{label} defaults map points at an unexpected source template")
+    patch = ROOT / str(settings.get("patch_file", ""))
+    if not patch.is_file():
+        fail(f"{label} defaults patch file is missing: {patch}")
     entries = settings.get("settings")
     if not isinstance(entries, list):
-        fail("Core defaults map must contain a settings list")
-    keys = {entry.get("key") for entry in entries if isinstance(entry, dict)}
-    expected = {"MapUpdate.Threads", "EnablePlayerSettings", "DBC.EnforceItemAttributes", "ActivateWeather"}
-    if keys != expected or len(entries) != len(expected):
-        fail(f"Unexpected core defaults keys: {sorted(str(key) for key in keys)}")
-    for entry in entries:
-        if not isinstance(entry.get("upstream_default"), str) or not isinstance(entry.get("target"), str):
-            fail(f"{entry.get('key')}: upstream_default and target must be strings")
+        fail(f"{label} defaults map must contain a settings list")
+    actual = {entry.get("key"): entry for entry in entries if isinstance(entry, dict)}
+    if set(actual) != set(expected) or len(entries) != len(expected):
+        fail(f"Unexpected {label} defaults keys: {sorted(str(key) for key in actual)}")
+    for key, values in expected.items():
+        entry = actual[key]
+        if (entry.get("upstream_default"), entry.get("target")) != values or not entry.get("evidence"):
+            fail(f"{label} default {key} must retain audited upstream/target values {values} and evidence")
+        if key in WORLD_PATCH_BASE_DEFAULTS and entry.get("patch_base_default") != WORLD_PATCH_BASE_DEFAULTS[key]:
+            fail(f"{label} default {key} must record current Playerbot branch base {WORLD_PATCH_BASE_DEFAULTS[key]}")
 
 
 def check_file(path: Path, settings: dict, expected_field: str) -> list[tuple[str, str, str]]:
@@ -75,28 +101,55 @@ def main() -> int:
     args = parser.parse_args()
 
     lock = load_json(LOCK_PATH)
-    settings = load_json(SETTINGS_PATH)
+    world_settings = load_json(WORLD_SETTINGS_PATH)
+    auth_settings = load_json(AUTH_SETTINGS_PATH)
     core_commit = lock.get("core", {}).get("commit", "")
-    validate_settings(settings, core_commit)
-    expected_field = "upstream_default" if settings["status"] == "pending_core_fork_commit" else "target"
-    template = args.core_dir.resolve() / settings["source_config"]
-    if not template.is_file():
-        fail(f"Pinned core worldserver template is missing: {template}")
-    actuals = check_file(template, settings, expected_field)
+    validate_settings(
+        world_settings,
+        core_commit,
+        WORLD_EXPECTED,
+        "src/server/apps/worldserver/worldserver.conf.dist",
+        "worldserver",
+    )
+    validate_settings(
+        auth_settings,
+        core_commit,
+        AUTH_EXPECTED,
+        "src/server/apps/authserver/authserver.conf.dist",
+        "authserver",
+    )
+    if world_settings["status"] != auth_settings["status"]:
+        fail("Authserver and worldserver defaults maps must have the same core-fork status")
+    status = world_settings["status"]
+    expected_field = "upstream_default" if status == "pending_core_fork_commit" else "target"
+
+    world_template = args.core_dir.resolve() / world_settings["source_config"]
+    auth_template = args.core_dir.resolve() / auth_settings["source_config"]
+    if not world_template.is_file():
+        fail(f"Pinned core worldserver template is missing: {world_template}")
+    if not auth_template.is_file():
+        fail(f"Pinned core authserver template is missing: {auth_template}")
+    world_actuals = check_file(world_template, world_settings, expected_field)
+    auth_actuals = check_file(auth_template, auth_settings, expected_field)
 
     if args.runtime:
-        runtime = args.config_dir.resolve() / "worldserver.conf"
-        if not runtime.is_file():
-            fail(f"Active runtime worldserver.conf is missing: {runtime}")
-        check_file(runtime, settings, expected_field)
+        world_runtime = args.config_dir.resolve() / "worldserver.conf"
+        auth_runtime = args.config_dir.resolve() / "authserver.conf"
+        if not world_runtime.is_file():
+            fail(f"Active runtime worldserver.conf is missing: {world_runtime}")
+        if not auth_runtime.is_file():
+            fail(f"Active runtime authserver.conf is missing: {auth_runtime}")
+        check_file(world_runtime, world_settings, expected_field)
+        check_file(auth_runtime, auth_settings, expected_field)
 
-    if settings["status"] == "pending_core_fork_commit":
-        summary = ", ".join(f"{key}={actual} (target {target})" for key, actual, target in actuals)
-        print(f"Core defaults verified at the pinned upstream values; PERSONAL FORK COMMIT PENDING: {summary}")
+    actuals = [("worldserver", *item) for item in world_actuals] + [("authserver", *item) for item in auth_actuals]
+    if status == "pending_core_fork_commit":
+        summary = ", ".join(f"{config}.{key}={actual} (target {target})" for config, key, actual, target in actuals)
+        print(f"Core server config defaults verified at the pinned upstream values; PERSONAL FORK COMMIT PENDING: {summary}")
         if args.require_target:
-            fail("Windows build/release is blocked until the four defaults are committed to the personal core fork and its new SHA is pinned.")
+            fail("Windows build/release is blocked until the tracked authserver/worldserver defaults are committed to the personal core fork and its new SHA is pinned.")
     else:
-        print(f"Pinned core worldserver defaults valid: {len(actuals)} required settings match the personal fork targets.")
+        print(f"Pinned core authserver/worldserver defaults valid: {len(actuals)} required settings match the personal fork targets.")
     return 0
 
 

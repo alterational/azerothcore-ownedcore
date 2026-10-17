@@ -227,8 +227,9 @@ jobs:
         id: core-readiness
         shell: pwsh
         run: |
-          $settings = Get-Content -Raw 'config/core-worldserver-defaults.json' | ConvertFrom-Json
-          $ready = $settings.status -eq 'pinned_in_core_fork'
+          $world = Get-Content -Raw 'config/core-worldserver-defaults.json' | ConvertFrom-Json
+          $auth = Get-Content -Raw 'config/core-authserver-defaults.json' | ConvertFrom-Json
+          $ready = ($world.status -eq 'pinned_in_core_fork') -and ($auth.status -eq 'pinned_in_core_fork')
           "ready=$($ready.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Package sanitized Windows runtime

@@ -4,11 +4,11 @@
 
 `.github/workflows/validate.yml` checks manifest/lock consistency, the module switch map, tracked additional/core-default maps, Python syntax, and JSON syntax. It does not fetch sources, compile, start a server, validate a database, or require client data.
 
-The Codespaces `postCreateCommand` validates and materializes the pinned core plus all 70 modules, validates every checkout against the lock, applies/checks the reviewed source compatibility patch, applies/checks the tracked module switches and additional module settings, then checks the pinned core config state. It does not install system dependencies, compile, start a server, or apply SQL. At the current core SHA, that final check explicitly reports that the four required core defaults are pending in the personal core fork. An already-created Codespace does not rerun `postCreateCommand`; pull the build-repository branch and run the preparation commands below or rebuild the container.
+The Codespaces `postCreateCommand` validates and materializes the pinned core plus all 70 modules, validates every checkout against the lock, applies/checks the reviewed source compatibility patch, applies/checks the tracked module switches and additional module settings, then checks the pinned core config state. It does not install system dependencies, compile, start a server, or apply SQL. At the current core SHA, that final check explicitly reports that the tracked authserver/worldserver defaults are pending in the personal core fork. An already-created Codespace does not rerun `postCreateCommand`; pull the build-repository branch and run the preparation commands below or rebuild the container.
 
 ## Required core-fork change before building
 
-The current core SHA still has the original values for `MapUpdate.Threads`, `EnablePlayerSettings`, `DBC.EnforceItemAttributes`, and `ActivateWeather`. The required changes belong in the history of `alterational/azerothcore-wotlk` on `Playerbot`, not as local modifications to the ignored `core/` checkout in this repository.
+The current core SHA still has the original values for `MapUpdate.Threads`, `EnablePlayerSettings`, `DBC.EnforceItemAttributes`, and `ActivateWeather`. Comparing the active config files on build-repository `main` also identified six portable defaults for logging, `.die` behavior, and the LFG options mask; these are included in the tracked authserver/worldserver patches. The required changes belong in the history of `alterational/azerothcore-wotlk` on `Playerbot`, not as local modifications to the ignored `core/` checkout in this repository.
 
 From the build repository's materialized `core/` checkout, after fetching the current personal `Playerbot` branch:
 
@@ -17,17 +17,20 @@ cd core
 git fetch origin refs/heads/Playerbot:refs/remotes/origin/Playerbot
 git switch --track -c Playerbot origin/Playerbot
 git apply --check --unidiff-zero ../patches/azerothcore-worldserver-defaults.patch
+git apply --check --unidiff-zero ../patches/azerothcore-authserver-defaults.patch
 git apply --unidiff-zero ../patches/azerothcore-worldserver-defaults.patch
-grep -n -E '^(MapUpdate\.Threads|EnablePlayerSettings|DBC\.EnforceItemAttributes|ActivateWeather) =' src/server/apps/worldserver/worldserver.conf.dist
-git add src/server/apps/worldserver/worldserver.conf.dist
-git commit -m "Set OwnedCore worldserver defaults"
+git apply --unidiff-zero ../patches/azerothcore-authserver-defaults.patch
+grep -n -E '^(Appender\.(Server|Playerbots|Errors)|MapUpdate\.Threads|ActivateWeather|Die\.Command\.Mode|EnablePlayerSettings|DBC\.EnforceItemAttributes) *=' src/server/apps/worldserver/worldserver.conf.dist
+grep -n '^Appender.Auth=' src/server/apps/authserver/authserver.conf.dist
+git add src/server/apps/worldserver/worldserver.conf.dist src/server/apps/authserver/authserver.conf.dist
+git commit -m "Set OwnedCore server config defaults"
 git push origin HEAD:Playerbot
 git rev-parse HEAD
 ```
 
-Record the resulting 40-character SHA. Update only these core fields in the build repository: `modules.manifest.json` → `core.candidate_commit`; `modules.lock.json` → `core.commit`; `scripts/validate_project.py` → `EXPECTED_CORE_SHA` (leave `PENDING_CORE_SHA` at the old SHA); `config/module-switches.json` and `config/additional-module-settings.json` → `core_commit`; and `config/core-worldserver-defaults.json` → the new `core_commit` plus status `pinned_in_core_fork`. Update the core SHA in `README.md`, `MODULE_CONFIG_AUDIT.md`, and `CHECKOUT_REPORT.md` too. The module pins were refreshed to current default-branch HEADs on 2026-10-17; preserve them during this core-pin update. Do not run `scripts/refresh_lock.py` without `--modules-only`, because its default also refreshes core. Until the new core pin and maps are updated, `python3 scripts/check_core_defaults.py --require-target` fails and the Windows workflow stops at its pre-build gate. No dependency setup, compilation, packaging, artifact upload, or release publication may proceed.
+Record the resulting 40-character SHA. Update only these core fields in the build repository: `modules.manifest.json` → `core.candidate_commit`; `modules.lock.json` → `core.commit`; `scripts/validate_project.py` → `EXPECTED_CORE_SHA` (leave `PENDING_CORE_SHA` at the old SHA); `config/module-switches.json` and `config/additional-module-settings.json` → `core_commit`; and both `config/core-worldserver-defaults.json` and `config/core-authserver-defaults.json` → the new `core_commit` plus status `pinned_in_core_fork`. Update the core SHA in `README.md`, `MODULE_CONFIG_AUDIT.md`, and `CHECKOUT_REPORT.md` too. The module pins were refreshed to current default-branch HEADs on 2026-10-17; preserve them during this core-pin update. Do not run `scripts/refresh_lock.py` without `--modules-only`, because its default also refreshes core. Until the new core pin and maps are updated, `python3 scripts/check_core_defaults.py --require-target` fails and the Windows workflow stops at its pre-build gate. No dependency setup, compilation, packaging, artifact upload, or release publication may proceed.
 
-> The agent cannot push a commit to `Playerbot` under the session's branch restriction. The zero-context patch is included and was verified with `git apply --check --unidiff-zero` against the current pinned file; the user must apply and commit it to the personal core fork, then provide/update the resulting SHA.
+> The two zero-context patches cover the reviewed portable authserver/worldserver defaults and are verified against both files at current core branch tip `8a4e76eac8c4ccebf547113afe7b51d6c3e91641`. The locked core `f19a18799a35f7c24bdcdc9ea399c601f166259b` already has `DungeonFinder.OptionsMask = 5`; the current branch tip has `7`, so the patch normalizes it when preparing the new pin. Machine-specific path values from the active configs are intentionally not copied. This session cannot push a commit to core branch `Playerbot`; the user must apply both patches and commit them to the personal core fork, then provide the resulting SHA for the build-repository pin update.
 
 ## Linux/Codespaces build
 
@@ -75,6 +78,6 @@ Some module READMEs cite minimum core revisions. Treat the full compile/runtime 
 
 `.github/workflows/windows-release.yml` uses the pinned core's Windows dependency/build approach, materializes all lockfile sources, requires the core-default gate, applies the reviewed source compatibility patch and the same module config maps, builds with MSVC on `windows-latest`, checks installed runtime configs, and packages Windows server binaries plus sanitized `.conf.dist` templates. The package script blanks database connection strings and password/token/key settings and excludes active `.conf` files, game/client data, maps, SQL, and dumps.
 
-The workflow runs on pull requests, `workflow_dispatch`, and `v*` tags. It runs `python scripts/check_core_defaults.py --require-target` before dependency setup or compilation and stops if the pinned core does not contain all four required defaults. Only after that gate passes does it build, check installed runtime configuration, package the sanitized runtime, and upload an artifact. A GitHub Release is published only for a version tag after that build and package succeed. No artifact or release is claimed until Actions reports it.
+The workflow runs on pull requests, `workflow_dispatch`, and `v*` tags. It runs `python scripts/check_core_defaults.py --require-target` before dependency setup or compilation and stops unless all ten tracked authserver/worldserver defaults match their requested values in the pinned core. Only after that gate passes does it build, check installed runtime configuration, package the sanitized runtime, and upload an artifact. A GitHub Release is published only for a version tag after that build and package succeed. No artifact or release is claimed until Actions reports it.
 
 The release artifact does not include game/client data, maps, vmaps, mmaps, database dumps, credentials, secrets, or active server-specific configuration. It is not a ready-to-run game server distribution; local database settings and the separately sourced client data are required.

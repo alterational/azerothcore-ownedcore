@@ -32,3 +32,4 @@ jobs:
           python3 -m json.tool config/module-switches.json >/dev/null
           python3 -m json.tool config/additional-module-settings.json >/dev/null
           python3 -m json.tool config/core-worldserver-defaults.json >/dev/null
+          python3 -m json.tool config/core-authserver-defaults.json >/dev/null

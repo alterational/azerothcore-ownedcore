@@ -15,6 +15,7 @@ LOCK_PATH = ROOT / "modules.lock.json"
 SWITCHES_PATH = ROOT / "config" / "module-switches.json"
 ADDITIONAL_SETTINGS_PATH = ROOT / "config" / "additional-module-settings.json"
 CORE_DEFAULTS_PATH = ROOT / "config" / "core-worldserver-defaults.json"
+CORE_AUTH_DEFAULTS_PATH = ROOT / "config" / "core-authserver-defaults.json"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 EXPECTED_CORE_URL = "https://github.com/alterational/azerothcore-wotlk.git"
 EXPECTED_CORE_BRANCH = "Playerbot"
@@ -183,37 +184,63 @@ def check_additional_settings_mapping(manifest: dict, lock: dict) -> int:
 
 
 def check_core_defaults_mapping(lock: dict) -> str:
-    mapping = load_json(CORE_DEFAULTS_PATH)
+    world = load_json(CORE_DEFAULTS_PATH)
+    auth = load_json(CORE_AUTH_DEFAULTS_PATH)
     core_commit = lock["core"].get("commit")
-    if mapping.get("core_commit") != core_commit:
-        fail("Core worldserver defaults map was audited against a different core commit")
-    status = mapping.get("status")
-    if status not in {"pending_core_fork_commit", "pinned_in_core_fork"}:
-        fail(f"Invalid core defaults status: {status!r}")
-    if status == "pending_core_fork_commit" and core_commit != PENDING_CORE_SHA:
+    world_status = world.get("status")
+    auth_status = auth.get("status")
+    if world_status not in {"pending_core_fork_commit", "pinned_in_core_fork"}:
+        fail(f"Invalid worldserver defaults status: {world_status!r}")
+    if auth_status != world_status:
+        fail("Authserver and worldserver defaults maps must have the same core-fork status")
+    if world_status == "pending_core_fork_commit" and core_commit != PENDING_CORE_SHA:
         fail("The old core SHA cannot remain marked pending after the personal-fork config commit")
-    if mapping.get("source_config") != "src/server/apps/worldserver/worldserver.conf.dist":
-        fail("Core defaults map points at an unexpected worldserver template")
-    patch = ROOT / mapping.get("patch_file", "")
-    if not patch.is_file():
-        fail("Core defaults patch file is missing")
-    entries = mapping.get("settings")
-    expected = {
-        "MapUpdate.Threads": ("1", "4"),
-        "EnablePlayerSettings": ("0", "1"),
-        "DBC.EnforceItemAttributes": ("1", "0"),
-        "ActivateWeather": ("1", "0"),
-    }
-    if not isinstance(entries, list) or len(entries) != len(expected):
-        fail("Core worldserver defaults map must contain exactly four reviewed settings")
-    actual = {entry.get("key"): entry for entry in entries if isinstance(entry, dict)}
-    if set(actual) != set(expected):
-        fail(f"Unexpected core defaults keys: {sorted(str(key) for key in actual)}")
-    for key, values in expected.items():
-        entry = actual[key]
-        if (entry.get("upstream_default"), entry.get("target")) != values or not entry.get("evidence"):
-            fail(f"Core default {key} must retain audited upstream/target values {values} and evidence")
-    return status
+
+    expected_maps = [
+        (
+            world,
+            "worldserver",
+            "src/server/apps/worldserver/worldserver.conf.dist",
+            {
+                "MapUpdate.Threads": ("1", "4"),
+                "EnablePlayerSettings": ("0", "1"),
+                "DBC.EnforceItemAttributes": ("1", "0"),
+                "ActivateWeather": ("1", "0"),
+                "Appender.Server": ("2,5,0,Server.log,w", "2,5,8,Server.log,w"),
+                "Appender.Playerbots": ("2,5,0,Playerbots.log,w", "2,5,8,Playerbots.log,w"),
+                "Appender.Errors": ("2,2,0,Errors.log,w", "2,2,8,Errors.log,w"),
+                "Die.Command.Mode": ("1", "0"),
+                "DungeonFinder.OptionsMask": ("5", "5"),
+            },
+        ),
+        (
+            auth,
+            "authserver",
+            "src/server/apps/authserver/authserver.conf.dist",
+            {"Appender.Auth": ("2,5,0,Auth.log,w", "2,5,8,Auth.log,w")},
+        ),
+    ]
+    for mapping, label, source_config, expected in expected_maps:
+        if mapping.get("core_commit") != core_commit:
+            fail(f"Core {label} defaults map was audited against a different core commit")
+        if mapping.get("source_config") != source_config:
+            fail(f"Core {label} defaults map points at an unexpected template")
+        patch = ROOT / mapping.get("patch_file", "")
+        if not patch.is_file():
+            fail(f"Core {label} defaults patch file is missing")
+        entries = mapping.get("settings")
+        if not isinstance(entries, list) or len(entries) != len(expected):
+            fail(f"Core {label} defaults map must contain exactly {len(expected)} reviewed settings")
+        actual = {entry.get("key"): entry for entry in entries if isinstance(entry, dict)}
+        if set(actual) != set(expected):
+            fail(f"Unexpected core {label} defaults keys: {sorted(str(key) for key in actual)}")
+        for key, values in expected.items():
+            entry = actual[key]
+            if (entry.get("upstream_default"), entry.get("target")) != values or not entry.get("evidence"):
+                fail(f"Core {label} default {key} must retain audited upstream/target values {values} and evidence")
+            if key == "DungeonFinder.OptionsMask" and entry.get("patch_base_default") != "7":
+                fail("DungeonFinder.OptionsMask must record current Playerbot branch default 7 separately from the locked core default")
+    return world_status
 
 
 def check() -> tuple[dict, dict]:
@@ -311,7 +338,7 @@ def check() -> tuple[dict, dict]:
         f"{no_master_count} documented no-master-switch cases."
     )
     print(
-        f"Additional settings valid: {additional_count} reviewed module defaults; core worldserver config status={core_defaults_status}."
+        f"Additional settings valid: {additional_count} reviewed module defaults; core authserver/worldserver config status={core_defaults_status}."
     )
     return manifest, lock
 

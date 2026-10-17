@@ -22,18 +22,24 @@ python3 scripts/apply_additional_settings.py --check --source-templates
 
 Both applicators use only tracked maps, preserve unrelated defaults, fail closed on unexpected values, and write atomically. City Life remains enabled at `CityLife.Enable = 1`; Dungeon Clear remains enabled at `DungeonClear.Enable = 1`. No SQL is run.
 
-## Core worldserver defaults belong in the core fork
+## Core authserver/worldserver defaults belong in the core fork
 
-The core configuration lives at `src/server/apps/worldserver/worldserver.conf.dist`. Its pinned SHA currently has these upstream values:
+The active configs added to build-repository `main` at commit `46c86b8f52445cb2baaff183e77ca2dd62f622b8` were compared with the locked core templates at `f19a18799a35f7c24bdcdc9ea399c601f166259b` and the read-only current `Playerbot` tip `8a4e76eac8c4ccebf547113afe7b51d6c3e91641`. Ten portable defaults are tracked for the core fork:
 
-| Setting | Current pinned value | Required value | Reason |
-|---|---:|---:|---|
-| `MapUpdate.Threads` | `1` | `4` | OwnedCore thread recommendation |
-| `EnablePlayerSettings` | `0` | `1` | Required by pinned Individual Progression and Challenge Modes READMEs |
-| `DBC.EnforceItemAttributes` | `1` | `0` | Required by pinned Individual Progression README |
-| `ActivateWeather` | `1` | `0` | Required by pinned Weather Vibe README |
+| Source template | Setting | Current pinned value | Requested value | Reason |
+|---|---|---|---|---|
+| authserver | `Appender.Auth` | `2,5,0,Auth.log,w` | `2,5,8,Auth.log,w` | Timestamp auth log filenames (flag 8) |
+| worldserver | `Appender.Server` | `2,5,0,Server.log,w` | `2,5,8,Server.log,w` | Timestamp server log filenames (flag 8) |
+| worldserver | `Appender.Playerbots` | `2,5,0,Playerbots.log,w` | `2,5,8,Playerbots.log,w` | Timestamp Playerbots log filenames (flag 8) |
+| worldserver | `Appender.Errors` | `2,2,0,Errors.log,w` | `2,2,8,Errors.log,w` | Timestamp error log filenames (flag 8) |
+| worldserver | `MapUpdate.Threads` | `1` | `4` | OwnedCore thread recommendation |
+| worldserver | `ActivateWeather` | `1` | `0` | Required by pinned Weather Vibe README |
+| worldserver | `Die.Command.Mode` | `1` | `0` | Disable side effects from `.die` |
+| worldserver | `DungeonFinder.OptionsMask` | `5` | `5` | Locked core already matches; normalize current Playerbot branch default 7 to retain dungeon finder and seasonal bosses while disabling raid browser |
+| worldserver | `EnablePlayerSettings` | `0` | `1` | Required by pinned Individual Progression and Challenge Modes READMEs |
+| worldserver | `DBC.EnforceItemAttributes` | `1` | `0` | Required by pinned Individual Progression README |
 
-The exact core patch is [`patches/azerothcore-worldserver-defaults.patch`](../patches/azerothcore-worldserver-defaults.patch). It must be applied and committed to `alterational/azerothcore-wotlk` on `Playerbot`. The ignored generated core checkout has not been edited. `config/core-worldserver-defaults.json` records the pending state; `scripts/check_core_defaults.py` verifies the current pin and, after the fork commit and core-SHA update, requires the target values. The Windows workflow uses `--require-target` and will not build/package the stale core pin.
+The config comparison also found path differences for `DataDir`, `LogsDir`, `TempDir`, `SourceDirectory`, and `MySQLExecutable`. These remain environment-specific runtime settings and are deliberately not promoted into shared source defaults. Database connection values were not changed. The patches are [`patches/azerothcore-worldserver-defaults.patch`](../patches/azerothcore-worldserver-defaults.patch) and [`patches/azerothcore-authserver-defaults.patch`](../patches/azerothcore-authserver-defaults.patch); apply both and commit them to `alterational/azerothcore-wotlk` on `Playerbot`. The ignored generated core checkout has not been edited. The two core-default maps record the pending state; `scripts/check_core_defaults.py` verifies both source templates and runtime configs. The Windows workflow uses `--require-target` and will not build/package until all ten settings are pinned.
 
 The RDF expansion and Dynamic XP requests preserve pinned defaults; the only module-template value changed beyond master switches is TimeIsTime's speed rate. Do not adjust other upstream defaults.
 

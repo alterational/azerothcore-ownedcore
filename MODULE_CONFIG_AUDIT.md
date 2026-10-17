@@ -18,18 +18,24 @@ The pinned core builds `CONFIG_FILE_LIST` from each selected module’s `conf/*.
 
 The OwnedCore settings were checked against the thread's [page 61](https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-general-releases/1040387-azerothcore-wotlk-repack-playerbots-individual-progression-32-other-modules-61.html) and [page 88](https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-general-releases/1040387-azerothcore-wotlk-repack-playerbots-individual-progression-32-other-modules-88.html). The pinned module templates/source confirm `RDF.Expansion = 2`, `Dynamic.XP.Rate = 1`, and `TimeIsTime.SpeedRate = 1.0` before application.
 
-## Core worldserver defaults (pending personal-fork commit)
+## Core authserver/worldserver defaults (pending personal-fork commit)
 
-The core template is outside the build-repository module map and must be changed in the user's personal core fork. `patches/azerothcore-worldserver-defaults.patch` changes only the following reviewed keys:
+Active configs added to build-repository `main` at `46c86b8f52445cb2baaff183e77ca2dd62f622b8` were compared with the pinned core templates at `f19a18799a35f7c24bdcdc9ea399c601f166259b`. Ten portable differences are tracked in the two zero-context patches:
 
-| Setting | Pinned core default | Requested value | Evidence |
-|---|---:|---:|---|
-| `MapUpdate.Threads` | `1` | `4` | OwnedCore page 61 |
-| `EnablePlayerSettings` | `0` | `1` | Pinned Individual Progression and Challenge Modes READMEs |
-| `DBC.EnforceItemAttributes` | `1` | `0` | Pinned Individual Progression README |
-| `ActivateWeather` | `1` | `0` | Pinned Weather Vibe README |
+| Source template | Setting | Pinned default | Requested default | Evidence |
+|---|---|---:|---:|---|
+| authserver | `Appender.Auth` | `2,5,0,Auth.log,w` | `2,5,8,Auth.log,w` | Active authserver config; timestamp-file flag 8 |
+| worldserver | `Appender.Server` | `2,5,0,Server.log,w` | `2,5,8,Server.log,w` | Active worldserver config; timestamp-file flag 8 |
+| worldserver | `Appender.Playerbots` | `2,5,0,Playerbots.log,w` | `2,5,8,Playerbots.log,w` | Active worldserver config; timestamp-file flag 8 |
+| worldserver | `Appender.Errors` | `2,2,0,Errors.log,w` | `2,2,8,Errors.log,w` | Active worldserver config; timestamp-file flag 8 |
+| worldserver | `MapUpdate.Threads` | `1` | `4` | OwnedCore page 61 |
+| worldserver | `ActivateWeather` | `1` | `0` | Pinned Weather Vibe README |
+| worldserver | `Die.Command.Mode` | `1` | `0` | Active worldserver config disables `.die` side effects |
+| worldserver | `DungeonFinder.OptionsMask` | `5` | `5` | Locked core already matches; current Playerbot branch default 7 is normalized to match active config bits 1 and 4 |
+| worldserver | `EnablePlayerSettings` | `0` | `1` | Pinned Individual Progression and Challenge Modes READMEs |
+| worldserver | `DBC.EnforceItemAttributes` | `1` | `0` | Pinned Individual Progression README |
 
-The zero-context patch passed `git apply --check --unidiff-zero` against core SHA `f19a18799a35f7c24bdcdc9ea399c601f166259b`; the current pinned file has not been modified. Commit the patch to `alterational/azerothcore-wotlk` on `Playerbot`, then update the core SHA in the build-repository manifest, lock, validator, config maps, and docs. While `config/core-worldserver-defaults.json` remains pending, the Windows workflow must stop at the pre-build `--require-target` gate; compilation and packaging are blocked.
+Path settings (`DataDir`, `LogsDir`, `TempDir`, `SourceDirectory`, and `MySQLExecutable`) differ in the active files but are intentionally not copied into shared defaults; database connection values are unchanged. `patches/azerothcore-worldserver-defaults.patch` and `patches/azerothcore-authserver-defaults.patch` both pass `git apply --check --unidiff-zero` against current `Playerbot` branch tip `8a4e76eac8c4ccebf547113afe7b51d6c3e91641`; the locked f19 core already has `DungeonFinder.OptionsMask = 5`, while the newer branch has `7`. No core files were modified. They must be applied and committed to `alterational/azerothcore-wotlk` on `Playerbot`, then the resulting SHA must be recorded in the build-repository manifest, lock, validator, both config maps, and docs. Until then, the Windows workflow stops at `check_core_defaults.py --require-target` before dependency setup or compilation.
 
 ## Master switches
 

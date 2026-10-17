@@ -4,7 +4,7 @@
   "status": "pending_core_fork_commit",
   "source_config": "src/server/apps/worldserver/worldserver.conf.dist",
   "patch_file": "patches/azerothcore-worldserver-defaults.patch",
-  "description": "The required worldserver template edits must be committed in alterational/azerothcore-wotlk on Playerbot. The locked source currently has only the recorded upstream values; no generated core file has been edited.",
+  "description": "Worldserver defaults compare the locked core and current Playerbot branch with the user-provided active config at build-repository main commit 46c86b8f52445cb2baaff183e77ca2dd62f622b8. The selected portable defaults and four required core/module compatibility values must be committed in alterational/azerothcore-wotlk on Playerbot; environment-specific paths remain unchanged.",
   "settings": [
     {
       "key": "MapUpdate.Threads",
@@ -29,6 +29,37 @@
       "upstream_default": "1",
       "target": "0",
       "evidence": "Pinned mod_weather_vibe README requires disabling the core WeatherMgr."
+    },
+    {
+      "key": "Appender.Server",
+      "upstream_default": "2,5,0,Server.log,w",
+      "target": "2,5,8,Server.log,w",
+      "evidence": "Main-branch worldserver.conf at 46c86b8 requests timestamped server log filenames (flag 8)."
+    },
+    {
+      "key": "Appender.Playerbots",
+      "upstream_default": "2,5,0,Playerbots.log,w",
+      "target": "2,5,8,Playerbots.log,w",
+      "evidence": "Main-branch worldserver.conf at 46c86b8 requests timestamped Playerbots log filenames (flag 8)."
+    },
+    {
+      "key": "Appender.Errors",
+      "upstream_default": "2,2,0,Errors.log,w",
+      "target": "2,2,8,Errors.log,w",
+      "evidence": "Main-branch worldserver.conf at 46c86b8 requests timestamped error log filenames (flag 8)."
+    },
+    {
+      "key": "Die.Command.Mode",
+      "upstream_default": "1",
+      "target": "0",
+      "evidence": "Main-branch worldserver.conf at 46c86b8 disables die-command side effects."
+    },
+    {
+      "key": "DungeonFinder.OptionsMask",
+      "upstream_default": "5",
+      "target": "5",
+      "evidence": "The locked core f19a187 already has 5; current Playerbot branch tip 8a4e76e has 7. The patch restores 5 on the branch tip, matching the active worldserver.conf at build-repository main commit 46c86b8.",
+      "patch_base_default": "7"
     }
   ]
 }

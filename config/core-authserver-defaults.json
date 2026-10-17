@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "core_commit": "f19a18799a35f7c24bdcdc9ea399c601f166259b",
+  "status": "pending_core_fork_commit",
+  "source_config": "src/server/apps/authserver/authserver.conf.dist",
+  "patch_file": "patches/azerothcore-authserver-defaults.patch",
+  "description": "Portable authserver logging default derived from authserver.conf at build-repository main commit 46c86b8f52445cb2baaff183e77ca2dd62f622b. Environment-specific directory and executable paths are intentionally not copied.",
+  "settings": [
+    {
+      "key": "Appender.Auth",
+      "upstream_default": "2,5,0,Auth.log,w",
+      "target": "2,5,8,Auth.log,w",
+      "evidence": "Main-branch authserver.conf at 46c86b8 requests timestamped auth log filenames (flag 8)."
+    }
+  ]
+}
