@@ -217,30 +217,9 @@ jobs:
             Write-Output "::error title=Windows build tail::$fallback"
           }
 
-      - name: Create fresh runtime config files
+      - name: Stage fresh runtime config files
         shell: pwsh
-        run: |
-          $dist = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist'
-          $configDir = Join-Path $dist 'configs'
-          $moduleDir = Join-Path $configDir 'modules'
-          if (-not (Test-Path -LiteralPath $configDir -PathType Container)) {
-            throw "Windows CMake install config directory is missing: $configDir"
-          }
-          if (-not (Test-Path -LiteralPath $moduleDir -PathType Container)) {
-            throw "Windows CMake install module config directory is missing: $moduleDir"
-          }
-          $rootConfigs = @(Get-ChildItem -LiteralPath $configDir -Filter '*.conf.dist' -File)
-          $moduleConfigs = @(Get-ChildItem -LiteralPath $moduleDir -Filter '*.conf.dist' -File)
-          if ($rootConfigs.Count -eq 0) { throw "No installed root .conf.dist templates found in $configDir" }
-          if ($moduleConfigs.Count -eq 0) { throw "No installed module .conf.dist templates found in $moduleDir" }
-          foreach ($source in $rootConfigs) {
-            $active = $source.FullName.Substring(0, $source.FullName.Length - '.dist'.Length)
-            if (-not (Test-Path -LiteralPath $active)) { Copy-Item -LiteralPath $source.FullName -Destination $active }
-          }
-          foreach ($source in $moduleConfigs) {
-            $active = $source.FullName.Substring(0, $source.FullName.Length - '.dist'.Length)
-            if (-not (Test-Path -LiteralPath $active)) { Copy-Item -LiteralPath $source.FullName -Destination $active }
-          }
+        run: python scripts/stage_runtime_configs.py --core-dir core --dist-dir core/env/dist
 
       - name: Stage Windows runtime DLL dependencies
         shell: pwsh
