@@ -16,9 +16,15 @@ ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "modules.lock.json"
 PATCHES = {
     "BGQueueChecker": ROOT / "patches" / "modules" / "BGQueueChecker-hook-name.patch",
+    "mod-aoe-loot": ROOT / "patches" / "modules" / "mod-aoe-loot-core-api.patch",
 }
 PATCHED_MODULE_COMMITS = {
     "BGQueueChecker": "0a6b9872f5d4f50286e5152c0debfeb1d6ef73a0",
+    "mod-aoe-loot": "be4f06af8e1b455cc31a227f12e2d0a741c799e0",
+}
+PATCH_SOURCE_FILES = {
+    "BGQueueChecker": ["src/BGQueueChecker.cpp"],
+    "mod-aoe-loot": ["src/aoe_loot.h", "src/aoe_loot.cpp"],
 }
 
 
@@ -82,10 +88,13 @@ def main() -> int:
         if still_applicable and not already_applied:
             if args.check:
                 raise RuntimeError(f"{module_id}: tracked source patch is not applied")
-            source = module_dir / "src" / "BGQueueChecker.cpp"
-            original_source = source.read_bytes()
+            original_sources = {
+                module_dir / relative_path: (module_dir / relative_path).read_bytes()
+                for relative_path in PATCH_SOURCE_FILES[module_id]
+            }
             git_output(["git", "-C", str(module_dir), "apply", "--ignore-whitespace", "--unidiff-zero", str(patch_path)])
-            preserve_crlf(source, original_source)
+            for source, original_source in original_sources.items():
+                preserve_crlf(source, original_source)
             if not git_apply_check(module_dir, patch_path, reverse=True):
                 raise RuntimeError(f"{module_id}: patch command completed but reverse verification failed")
             print(f"{module_id}: applied tracked source patch at {actual_commit[:12]}")
