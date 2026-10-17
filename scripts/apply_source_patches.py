@@ -17,14 +17,17 @@ LOCK_PATH = ROOT / "modules.lock.json"
 PATCHES = {
     "BGQueueChecker": ROOT / "patches" / "modules" / "BGQueueChecker-hook-name.patch",
     "mod-aoe-loot": ROOT / "patches" / "modules" / "mod-aoe-loot-core-api.patch",
+    "mod-challenge-modes": ROOT / "patches" / "modules" / "mod-challenge-modes-player-hook.patch",
 }
 PATCHED_MODULE_COMMITS = {
     "BGQueueChecker": "0a6b9872f5d4f50286e5152c0debfeb1d6ef73a0",
     "mod-aoe-loot": "be4f06af8e1b455cc31a227f12e2d0a741c799e0",
+    "mod-challenge-modes": "1930525b9530d329cb9fe0504a3c9b5b40a12261",
 }
 PATCH_SOURCE_FILES = {
     "BGQueueChecker": ["src/BGQueueChecker.cpp"],
     "mod-aoe-loot": ["src/aoe_loot.h", "src/aoe_loot.cpp"],
+    "mod-challenge-modes": ["src/ChallengeModes.cpp"],
 }
 
 

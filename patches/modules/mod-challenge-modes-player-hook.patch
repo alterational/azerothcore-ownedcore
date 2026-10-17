@@ -1,0 +1,10 @@
+diff --git a/src/ChallengeModes.cpp b/src/ChallengeModes.cpp
+index 32e4b0e..0111cd4 100644
+--- a/src/ChallengeModes.cpp
++++ b/src/ChallengeModes.cpp
+@@ -448 +448 @@ public:
+-    void OnPlayerResurrect(Player* player, float /*restore_percent*/, bool /*applySickness*/) override
++    void OnPlayerResurrect(Player* player, float /*restore_percent*/, bool& /*applySickness*/) override
+@@ -629 +629 @@ public:
+-    void OnPlayerResurrect(Player* player, float /*restore_percent*/, bool /*applySickness*/) override
++    void OnPlayerResurrect(Player* player, float /*restore_percent*/, bool& /*applySickness*/) override
