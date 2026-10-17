@@ -159,6 +159,21 @@ jobs:
           '@ | Set-Content -Path 'core/conf/config.sh' -Encoding ascii
           Get-Content 'core/conf/config.sh'
 
+      - name: Use a short path for the Windows build
+        shell: pwsh
+        run: |
+          if (Test-Path 'Z:\') { throw 'Z: is already occupied; cannot create the short build path.' }
+          $coreRoot = Join-Path $env:GITHUB_WORKSPACE 'core'
+          & subst Z: $coreRoot
+          if ($LASTEXITCODE -ne 0) { throw "Failed to map $coreRoot to Z:." }
+          if (-not (Test-Path 'Z:\acore.sh')) { throw 'The short path does not expose the core checkout.' }
+          & git config --global --add safe.directory 'Z:/'
+          $modules = Get-ChildItem -LiteralPath 'Z:\modules' -Directory
+          foreach ($module in $modules) {
+            & git config --global --add safe.directory $module.FullName
+          }
+          Write-Host "Mapped $coreRoot to Z:\ to keep Windows resource-compiler commands below the CreateProcess limit."
+
       - name: Build and install server
         id: windows-build
         shell: bash
@@ -169,6 +184,9 @@ jobs:
           CXX: cl
           RC: rc
         run: |
+          cd /z
+          printf 'Short build root: %s\n' "$(pwd -W)"
+          test -f ./acore.sh
           set -o pipefail
           ./acore.sh compiler all 2>&1 | tee windows-build.log
 
