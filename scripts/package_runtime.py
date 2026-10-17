@@ -18,7 +18,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "modules.lock.json"
 
-# Only server runtimes and shared runtime DLLs are copied from env/dist/bin.
+# Only required server runtimes and shared runtime DLLs are copied from the selected binary directory.
 REQUIRED_BINARIES = {"worldserver.exe", "authserver.exe"}
 DATABASE_INFO_RE = re.compile(r"^[A-Za-z0-9_.-]*DatabaseInfo$", re.IGNORECASE)
 SENSITIVE_KEY_RE = re.compile(
@@ -63,15 +63,17 @@ def copy_config_template(source: Path, destination: Path) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dist-dir", type=Path, default=ROOT / "core" / "env" / "dist", help="installed AzerothCore runtime tree")
+    parser.add_argument("--binary-dir", type=Path, help="directory containing installed executables/DLLs (default: <dist-dir>/bin)")
+    parser.add_argument("--config-dir", type=Path, help="directory containing installed .conf.dist templates (default: <dist-dir>/etc)")
     parser.add_argument("--output", type=Path, default=ROOT / "runtime-package", help="output package directory")
     args = parser.parse_args()
 
     dist = args.dist_dir.resolve()
     output = args.output.resolve()
-    bin_dir = dist / "bin"
-    etc_dir = dist / "etc"
-    if not bin_dir.is_dir() or not etc_dir.is_dir():
-        raise RuntimeError(f"Expected installed runtime directories at {bin_dir} and {etc_dir}")
+    bin_dir = (args.binary_dir if args.binary_dir is not None else dist / "bin").resolve()
+    config_dir = (args.config_dir if args.config_dir is not None else dist / "etc").resolve()
+    if not bin_dir.is_dir() or not config_dir.is_dir():
+        raise RuntimeError(f"Expected installed binary/config directories at {bin_dir} and {config_dir}")
     missing = sorted(name for name in REQUIRED_BINARIES if not (bin_dir / name).is_file())
     if missing:
         raise RuntimeError("Missing required Windows server binaries: " + ", ".join(missing))
@@ -92,13 +94,13 @@ def main() -> int:
         shutil.copy2(source, binary_output / source.name)
         copied_binaries += 1
 
-    template_sources = sorted(etc_dir.rglob("*.conf.dist"))
+    template_sources = sorted(config_dir.rglob("*.conf.dist"))
     if not template_sources:
-        raise RuntimeError(f"No .conf.dist runtime templates found under {etc_dir}")
+        raise RuntimeError(f"No .conf.dist runtime templates found under {config_dir}")
     copied_configs = 0
     redacted_values = 0
     for source in template_sources:
-        relative = source.relative_to(etc_dir)
+        relative = source.relative_to(config_dir)
         # Restrict packaging to the root runtime templates and installed module templates.
         if relative.parts and relative.parts[0] not in {"modules"} and len(relative.parts) != 1:
             continue

@@ -220,13 +220,24 @@ jobs:
       - name: Create fresh runtime config files
         shell: pwsh
         run: |
-          $etc = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist\etc'
-          foreach ($source in Get-ChildItem -LiteralPath $etc -Filter '*.conf.dist' -File) {
+          $dist = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist'
+          $configDir = Join-Path $dist 'configs'
+          $moduleDir = Join-Path $configDir 'modules'
+          if (-not (Test-Path -LiteralPath $configDir -PathType Container)) {
+            throw "Windows CMake install config directory is missing: $configDir"
+          }
+          if (-not (Test-Path -LiteralPath $moduleDir -PathType Container)) {
+            throw "Windows CMake install module config directory is missing: $moduleDir"
+          }
+          $rootConfigs = @(Get-ChildItem -LiteralPath $configDir -Filter '*.conf.dist' -File)
+          $moduleConfigs = @(Get-ChildItem -LiteralPath $moduleDir -Filter '*.conf.dist' -File)
+          if ($rootConfigs.Count -eq 0) { throw "No installed root .conf.dist templates found in $configDir" }
+          if ($moduleConfigs.Count -eq 0) { throw "No installed module .conf.dist templates found in $moduleDir" }
+          foreach ($source in $rootConfigs) {
             $active = $source.FullName.Substring(0, $source.FullName.Length - '.dist'.Length)
             if (-not (Test-Path -LiteralPath $active)) { Copy-Item -LiteralPath $source.FullName -Destination $active }
           }
-          $moduleDir = Join-Path $etc 'modules'
-          foreach ($source in Get-ChildItem -LiteralPath $moduleDir -Filter '*.conf.dist' -File) {
+          foreach ($source in $moduleConfigs) {
             $active = $source.FullName.Substring(0, $source.FullName.Length - '.dist'.Length)
             if (-not (Test-Path -LiteralPath $active)) { Copy-Item -LiteralPath $source.FullName -Destination $active }
           }
@@ -234,7 +245,7 @@ jobs:
       - name: Stage Windows runtime DLL dependencies
         shell: pwsh
         run: |
-          $dest = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist\bin'
+          $dest = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist'
           $dependencyDirs = @(
             'C:\tools\mysql\current\bin',
             'C:\openssl\bin',
@@ -249,11 +260,12 @@ jobs:
       - name: Apply and check installed runtime config
         shell: pwsh
         run: |
-          python scripts/apply_module_config.py --apply
-          python scripts/apply_additional_settings.py --apply
-          python scripts/apply_module_config.py --check
-          python scripts/apply_additional_settings.py --check
-          python scripts/check_core_defaults.py --runtime
+          $configDir = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist\configs'
+          python scripts/apply_module_config.py --config-dir "$configDir" --apply
+          python scripts/apply_additional_settings.py --config-dir "$configDir" --apply
+          python scripts/apply_module_config.py --config-dir "$configDir" --check
+          python scripts/apply_additional_settings.py --config-dir "$configDir" --check
+          python scripts/check_core_defaults.py --config-dir "$configDir" --runtime
 
       - name: Record core config readiness for publication
         id: core-readiness
@@ -267,7 +279,7 @@ jobs:
       - name: Package sanitized Windows runtime
         if: steps.core-readiness.outputs.ready == 'true'
         shell: pwsh
-        run: python scripts/package_runtime.py --dist-dir core/env/dist --output runtime-package
+        run: python scripts/package_runtime.py --dist-dir core/env/dist --binary-dir core/env/dist --config-dir core/env/dist/configs --output runtime-package
 
       - name: Upload successful Windows runtime artifact
         if: steps.core-readiness.outputs.ready == 'true'

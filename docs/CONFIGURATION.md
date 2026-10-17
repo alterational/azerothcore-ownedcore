@@ -45,7 +45,7 @@ The RDF expansion and Dynamic XP requests preserve pinned defaults; the only mod
 
 ## How AzerothCore loads module configs
 
-The pinned core builds active module config names from `core/modules/CMakeLists.txt`; `worldserver` passes them to `ConfigMgr::Configure`, and `ConfigMgr::LoadModulesConfigs` reads them from `<CONF_DIR>/modules/`. `acore.sh compiler all` installs the `.conf.dist` files under `env/dist/etc/modules` and copies missing `.conf` runtime files on Linux with the default `AC_ENABLE_CONF_COPY_ON_INSTALL=1`.
+The pinned core builds active module config names from `core/modules/CMakeLists.txt`; `worldserver` passes them to `ConfigMgr::Configure`, and `ConfigMgr::LoadModulesConfigs` reads them from `<CONF_DIR>/modules/`. On Linux, `acore.sh compiler all` installs the `.conf.dist` files under `env/dist/etc/modules` and copies missing `.conf` runtime files with the default `AC_ENABLE_CONF_COPY_ON_INSTALL=1`. On Windows, the pinned core's CMake install rules put server executables directly under `env/dist` and config templates under `env/dist/configs/modules`; use that platform-specific path when checking installed runtime configs.
 
 After a successful build/install, apply/check runtime configs from the build-repository root:
 
@@ -57,7 +57,7 @@ python3 scripts/apply_module_config.py --check
 python3 scripts/apply_additional_settings.py --check
 ```
 
-The default active directory is `core/env/dist/etc`; pass `--config-dir <path>` when using a custom `CONFDIR`. Runtime applicators patch only their reviewed assignments and preserve unrelated settings. Missing files or changed upstream values fail instead of being silently guessed.
+On Linux, the default active directory is `core/env/dist/etc`. On Windows, use `--config-dir core/env/dist/configs` to match the pinned core's CMake install layout; the Windows workflow does this explicitly. Pass `--config-dir <path>` for any other nondefault `CONFDIR`. Runtime applicators patch only their reviewed assignments and preserve unrelated settings. Missing files or changed upstream values fail instead of being silently guessed.
 
 ## Decisions and limits
 
