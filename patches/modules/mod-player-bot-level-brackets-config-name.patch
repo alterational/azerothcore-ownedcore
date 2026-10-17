@@ -1,0 +1,7 @@
+diff --git a/src/mod-player-bot-level-brackets.cpp b/src/mod-player-bot-level-brackets.cpp
+index 25fbc7c..7274872 100644
+--- a/src/mod-player-bot-level-brackets.cpp
++++ b/src/mod-player-bot-level-brackets.cpp
+@@ -670 +670 @@ static void AdjustBotToRange(Player* bot, int targetRangeIndex, const LevelRange
+-    if (newLevel == g_RandomBotMaxLevel && sPlayerbotAIConfig.equipAndSpecPersistence)
++    if (newLevel == g_RandomBotMaxLevel && sPlayerbotAIConfig.EquipAndSpecPersistence)

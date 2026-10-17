@@ -19,18 +19,21 @@ PATCHES = {
     "mod-aoe-loot": ROOT / "patches" / "modules" / "mod-aoe-loot-core-api.patch",
     "mod-challenge-modes": ROOT / "patches" / "modules" / "mod-challenge-modes-player-hook.patch",
     "mod-dead-means-dead": ROOT / "patches" / "modules" / "mod-dead-means-dead-login-hook.patch",
+    "mod-player-bot-level-brackets": ROOT / "patches" / "modules" / "mod-player-bot-level-brackets-config-name.patch",
 }
 PATCHED_MODULE_COMMITS = {
     "BGQueueChecker": "0a6b9872f5d4f50286e5152c0debfeb1d6ef73a0",
     "mod-aoe-loot": "be4f06af8e1b455cc31a227f12e2d0a741c799e0",
     "mod-challenge-modes": "1930525b9530d329cb9fe0504a3c9b5b40a12261",
     "mod-dead-means-dead": "725b14973be28c4acea7d1a892bbe7cfdd2e8a51",
+    "mod-player-bot-level-brackets": "a94f9c6458bf6264164436a53ddd4e5c3ed44fdb",
 }
 PATCH_SOURCE_FILES = {
     "BGQueueChecker": ["src/BGQueueChecker.cpp"],
     "mod-aoe-loot": ["src/aoe_loot.h", "src/aoe_loot.cpp"],
     "mod-challenge-modes": ["src/ChallengeModes.cpp"],
     "mod-dead-means-dead": ["src/DeadMeansDead.cpp"],
+    "mod-player-bot-level-brackets": ["src/mod-player-bot-level-brackets.cpp"],
 }
 
 
