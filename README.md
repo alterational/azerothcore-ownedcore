@@ -26,6 +26,8 @@ python3 scripts/materialize.py
 python3 scripts/validate_project.py --check-checkout
 python3 scripts/apply_source_patches.py --apply
 python3 scripts/apply_source_patches.py --check
+python3 scripts/apply_core_compatibility_patches.py --apply
+python3 scripts/apply_core_compatibility_patches.py --check
 python3 scripts/apply_module_config.py --apply --source-templates
 python3 scripts/apply_additional_settings.py --apply --source-templates
 python3 scripts/apply_module_config.py --check --source-templates

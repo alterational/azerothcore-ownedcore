@@ -56,6 +56,8 @@ jobs:
         run: |
           python scripts/apply_source_patches.py --apply
           python scripts/apply_source_patches.py --check
+          python scripts/apply_core_compatibility_patches.py --apply
+          python scripts/apply_core_compatibility_patches.py --check
 
       - name: Apply and check tracked module templates
         shell: pwsh

@@ -16,6 +16,8 @@ SWITCHES_PATH = ROOT / "config" / "module-switches.json"
 ADDITIONAL_SETTINGS_PATH = ROOT / "config" / "additional-module-settings.json"
 CORE_DEFAULTS_PATH = ROOT / "config" / "core-worldserver-defaults.json"
 CORE_AUTH_DEFAULTS_PATH = ROOT / "config" / "core-authserver-defaults.json"
+CORE_COMPATIBILITY_PATCH_PATH = ROOT / "patches" / "azerothcore-ninja-msvc-config-path.patch"
+CORE_COMPATIBILITY_PATCH_SHA = "14c435031d2cb31b1af664af9a83c5d6256302b6"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 EXPECTED_CORE_URL = "https://github.com/alterational/azerothcore-wotlk.git"
 EXPECTED_CORE_BRANCH = "Playerbot"
@@ -308,6 +310,8 @@ def check() -> tuple[dict, dict]:
         fail("Core lock SHA differs from the user-designated pinned commit")
     if manifest_core.get("candidate_commit") != core_commit:
         fail("Manifest candidate core commit and lock SHA differ")
+    if core_commit == CORE_COMPATIBILITY_PATCH_SHA and not CORE_COMPATIBILITY_PATCH_PATH.is_file():
+        fail("The tracked Windows Ninja/MSVC core compatibility patch is missing")
 
     by_id = {module["id"]: module for module in modules}
     for module_id in ("mod-playerbots-city-life", "mod-dungeon-clear"):

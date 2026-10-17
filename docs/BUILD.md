@@ -10,7 +10,7 @@ The Codespaces `postCreateCommand` validates and materializes the pinned core pl
 
 The required authserver/worldserver source-default changes are committed in the user's core fork `alterational/azerothcore-wotlk`, branch `Playerbot`, at `14c435031d2cb31b1af664af9a83c5d6256302b6`. That commit is the core SHA in `modules.lock.json`; read-only checks of both pinned `.conf.dist` templates confirmed all ten target values. The four required compatibility defaults (`MapUpdate.Threads = 4`, `EnablePlayerSettings = 1`, `DBC.EnforceItemAttributes = 0`, and `ActivateWeather = 0`) are present, along with the reviewed logging, `.die`, and Dungeon Finder defaults. Machine-specific path values and database connection settings were not copied.
 
-`python3 scripts/check_core_defaults.py --require-target` is now the pre-build gate: it must pass against the pinned source. No full build has yet been proven by this source check alone. The patches under `patches/azerothcore-*-defaults.patch` document the source changes; do not apply them again to the already-updated pinned core.
+`python3 scripts/check_core_defaults.py --require-target` is the pre-build gate: it must pass against the pinned source. The patches under `patches/azerothcore-*-defaults.patch` document source defaults already committed to the fork; do not apply them again. A separate Windows Ninja/MSVC compatibility patch fixes the Visual-Studio-only `$(ConfigurationName)` path in `core/modules/CMakeLists.txt`: multi-config generators use `$<CONFIG>/`, while single-config Ninja uses no configuration subdirectory. This prevents Ninja's `bad $-escape` during configure and keeps the copy path aligned with the binary output directory. `scripts/apply_core_compatibility_patches.py` applies it only to the audited core SHA in the ignored materialized checkout. It does not change or mask the core pin.
 
 ## Linux/Codespaces build
 
@@ -22,6 +22,8 @@ python3 scripts/materialize.py
 python3 scripts/validate_project.py --check-checkout
 python3 scripts/apply_source_patches.py --apply
 python3 scripts/apply_source_patches.py --check
+python3 scripts/apply_core_compatibility_patches.py --apply
+python3 scripts/apply_core_compatibility_patches.py --check
 python3 scripts/apply_module_config.py --apply --source-templates
 python3 scripts/apply_additional_settings.py --apply --source-templates
 python3 scripts/apply_module_config.py --check --source-templates
@@ -56,7 +58,7 @@ Some module READMEs cite minimum core revisions. Treat the full compile/runtime 
 
 ## Windows build and publication
 
-`.github/workflows/windows-release.yml` uses the pinned core's Windows dependency/build approach, materializes all lockfile sources, requires the core-default gate, applies the reviewed source compatibility patch and the same module config maps, builds with MSVC on `windows-latest`, checks installed runtime configs, and packages Windows server binaries plus sanitized `.conf.dist` templates. The package script blanks database connection strings and password/token/key settings and excludes active `.conf` files, game/client data, maps, SQL, and dumps.
+`.github/workflows/windows-release.yml` uses the pinned core's Windows dependency/build approach, materializes all lockfile sources, requires the core-default gate, applies the BGQueueChecker module patch and the SHA-guarded Ninja/MSVC CMake path patch, then applies the same module config maps, builds with MSVC on `windows-latest`, checks installed runtime configs, and packages Windows server binaries plus sanitized `.conf.dist` templates. The package script blanks database connection strings and password/token/key settings and excludes active `.conf` files, game/client data, maps, SQL, and dumps.
 
 The workflow runs on pull requests, `workflow_dispatch`, and `v*` tags. It runs `python scripts/check_core_defaults.py --require-target` before dependency setup or compilation and stops unless all ten tracked authserver/worldserver defaults match their requested values in the pinned core. Only after that gate passes does it build, check installed runtime configuration, package the sanitized runtime, and upload an artifact. A GitHub Release is published only for a version tag after that build and package succeed. No artifact or release is claimed until Actions reports it.
 
