@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Package Windows binaries, unchanged config templates, and edited active copies.
+"""Package Windows executables, selected runtime DLLs, and config copies.
 
 The package intentionally excludes game/client data, maps, SQL, database dumps,
 and machine-specific active `.conf` files. Public `.conf.dist` templates are copied
 byte-for-byte; their `.conf` siblings are generated in the package and edited only
 by the reviewed, repository-controlled config map. Failed individual edits warn
-but do not fail packaging.
+but do not fail packaging. Executables and validated runtime dependencies are
+placed at the package root; configuration files remain under `etc/`.
 """
 from __future__ import annotations
 
@@ -18,13 +19,24 @@ import zipfile
 
 from module_selection import excluded_module_ids, select_modules
 from package_config_edits import DEFAULT_CONFIG_EDITS_PATH, stage_and_edit_configs
+from stage_windows_runtime_dlls import is_debug_dll
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "modules.lock.json"
 MANIFEST_PATH = ROOT / "modules.manifest.json"
 
-# Only required server runtimes and shared runtime DLLs are copied from the selected binary directory.
-REQUIRED_BINARIES = {"worldserver.exe", "authserver.exe"}
+REQUIRED_BINARIES = ("worldserver.exe", "authserver.exe")
+REQUIRED_RUNTIME_DLLS = {
+    "libmysql.dll",
+    "libcrypto-3-x64.dll",
+    "libssl-3-x64.dll",
+    "legacy.dll",
+    "msvcp140.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
+}
+RUNTIME_INVENTORY = "RUNTIME-DLLS.json"
+VC_RUNTIME_MANIFEST = "Microsoft.VC143.CRT.manifest"
 
 
 def copy_config_template(source: Path, destination: Path) -> None:
@@ -36,10 +48,52 @@ def copy_config_template(source: Path, destination: Path) -> None:
         raise RuntimeError(f"Cannot copy config template {source} to {destination}: {exc}") from exc
 
 
+def validate_runtime_dll_directory(dll_dir: Path) -> tuple[list[Path], dict]:
+    """Validate the dependency stage inventory and reject debug/Boost DLLs."""
+    if not dll_dir.is_dir():
+        raise RuntimeError(f"Missing staged Windows runtime DLL directory: {dll_dir}")
+    dlls = sorted(
+        (path for path in dll_dir.iterdir() if path.is_file() and path.suffix.casefold() == ".dll"),
+        key=lambda path: path.name.casefold(),
+    )
+    dll_names = {path.name.casefold() for path in dlls}
+    missing = sorted(name for name in REQUIRED_RUNTIME_DLLS if name.casefold() not in dll_names)
+    if missing:
+        raise RuntimeError("Missing required Windows runtime DLLs: " + ", ".join(missing))
+    debug_dlls = [path.name for path in dlls if is_debug_dll(path.name)]
+    boost_dlls = [path.name for path in dlls if "boost" in path.name.casefold()]
+    if debug_dlls:
+        raise RuntimeError("Debug DLLs are not permitted in the release package: " + ", ".join(debug_dlls))
+    if boost_dlls:
+        raise RuntimeError("Boost DLLs are not required by the release executables and must not be packaged: " + ", ".join(boost_dlls))
+
+    inventory_path = dll_dir / RUNTIME_INVENTORY
+    if not inventory_path.is_file():
+        raise RuntimeError(f"Missing dependency-analysis inventory: {inventory_path}")
+    try:
+        inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Cannot read dependency-analysis inventory {inventory_path}: {exc}") from exc
+    if not isinstance(inventory, dict) or inventory.get("schema_version") != 1:
+        raise RuntimeError(f"Unsupported dependency-analysis inventory schema in {inventory_path}")
+    expected = inventory.get("runtime_dlls")
+    if not isinstance(expected, list) or not all(isinstance(name, str) for name in expected):
+        raise RuntimeError(f"Invalid runtime_dlls list in {inventory_path}")
+    if {name.casefold() for name in expected} != dll_names:
+        raise RuntimeError(
+            f"Staged DLLs do not match {RUNTIME_INVENTORY}; rerun dependency analysis before packaging"
+        )
+    manifest = dll_dir / VC_RUNTIME_MANIFEST
+    if not manifest.is_file():
+        raise RuntimeError(f"Missing app-local Visual C++ runtime manifest: {manifest}")
+    return dlls, inventory
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dist-dir", type=Path, default=ROOT / "core" / "env" / "dist", help="installed AzerothCore runtime tree")
-    parser.add_argument("--binary-dir", type=Path, help="directory containing installed executables/DLLs (default: <dist-dir>/bin)")
+    parser.add_argument("--binary-dir", type=Path, help="directory containing installed executables (default: <dist-dir>)")
+    parser.add_argument("--dll-dir", type=Path, help="validated minimal runtime DLL staging directory (default: <dist-dir>/runtime-dlls)")
     parser.add_argument("--config-dir", type=Path, help="directory containing installed .conf.dist templates (default: <dist-dir>/etc)")
     parser.add_argument("--output", type=Path, default=ROOT / "runtime-package", help="output package directory")
     parser.add_argument(
@@ -68,29 +122,27 @@ def main() -> int:
 
     dist = args.dist_dir.resolve()
     output = args.output.resolve()
-    bin_dir = (args.binary_dir if args.binary_dir is not None else dist / "bin").resolve()
+    binary_dir = (args.binary_dir if args.binary_dir is not None else dist).resolve()
+    dll_dir = (args.dll_dir if args.dll_dir is not None else dist / "runtime-dlls").resolve()
     config_dir = (args.config_dir if args.config_dir is not None else dist / "etc").resolve()
-    if not bin_dir.is_dir() or not config_dir.is_dir():
-        raise RuntimeError(f"Expected installed binary/config directories at {bin_dir} and {config_dir}")
-    missing = sorted(name for name in REQUIRED_BINARIES if not (bin_dir / name).is_file())
+    if not binary_dir.is_dir() or not config_dir.is_dir():
+        raise RuntimeError(f"Expected installed binary/config directories at {binary_dir} and {config_dir}")
+    missing = sorted(name for name in REQUIRED_BINARIES if not (binary_dir / name).is_file())
     if missing:
         raise RuntimeError("Missing required Windows server binaries: " + ", ".join(missing))
+    runtime_dlls, runtime_inventory = validate_runtime_dll_directory(dll_dir)
     if output.exists() and any(output.iterdir()):
         raise RuntimeError(f"Refusing to overwrite nonempty package directory: {output}")
     output.mkdir(parents=True, exist_ok=True)
 
     package_root = output / "azerothcore-ownedcore-windows"
-    binary_output = package_root / "bin"
-    binary_output.mkdir(parents=True)
-    copied_binaries = 0
-    for source in sorted(bin_dir.iterdir()):
-        if not source.is_file():
-            continue
-        suffix = source.suffix.lower()
-        if source.name.lower() not in REQUIRED_BINARIES and suffix != ".dll":
-            continue
-        shutil.copy2(source, binary_output / source.name)
-        copied_binaries += 1
+    package_root.mkdir(parents=True)
+    for name in REQUIRED_BINARIES:
+        shutil.copy2(binary_dir / name, package_root / name)
+    for source in runtime_dlls:
+        shutil.copy2(source, package_root / source.name)
+    shutil.copy2(dll_dir / VC_RUNTIME_MANIFEST, package_root / VC_RUNTIME_MANIFEST)
+    shutil.copy2(dll_dir / RUNTIME_INVENTORY, package_root / RUNTIME_INVENTORY)
 
     template_sources = sorted(config_dir.rglob("*.conf.dist"))
     if not template_sources:
@@ -108,9 +160,10 @@ def main() -> int:
 
     (package_root / "README.txt").write_text(
         "AzerothCore OwnedCore Windows runtime build.\n"
-        "Source pins are recorded in the build repository's modules.lock.json.\n"
-        "This package contains server binaries, unchanged *.conf.dist templates, and active .conf copies generated from those templates.\n"
-        "Only edits listed in the build repository's config/package-config-edits.json are applied to active copies; installed machine-specific configs are not copied.\n"
+        "authserver.exe, worldserver.exe, and the selected runtime DLLs are at the package root (there is no bin/ directory).\n"
+        "RUNTIME-DLLS.json records the dependency-analysis inventory; Boost and debug DLLs are not packaged.\n"
+        "Configuration templates and generated active copies are under etc/; module configs are under etc/modules/.\n"
+        "Public *.conf.dist templates are unchanged. Only edits listed in the build repository's config/package-config-edits.json are applied to generated active copies; installed machine-specific configs are not copied.\n"
         "Unapplied edits caused by a missing file/key or a value-type mismatch are reported as non-fatal warnings.\n"
         "Individual Progression source is "
         + ("included by explicit request.\n" if individual_progression_included else "omitted from the default build.\n")
@@ -140,9 +193,10 @@ def main() -> int:
 
     variant = "with Individual Progression" if individual_progression_included else "without Individual Progression"
     print(
-        f"Packaged {copied_binaries} Windows binaries/DLLs, {copied_configs} unchanged .conf.dist templates, "
-        f"and {active_configs} active .conf copies; applied {applied_edits} config edits with "
-        f"{config_warnings} non-fatal warning(s) ({variant}). Archive: {archive}"
+        f"Packaged {len(REQUIRED_BINARIES)} server executables, {len(runtime_dlls)} selected runtime DLLs, "
+        f"{copied_configs} unchanged .conf.dist templates, and {active_configs} active .conf copies; "
+        f"applied {applied_edits} config edits with {config_warnings} non-fatal warning(s) "
+        f"({variant}; MySQL {runtime_inventory.get('mysql_client_version', 'unknown')}). Archive: {archive}"
     )
     return 0
 

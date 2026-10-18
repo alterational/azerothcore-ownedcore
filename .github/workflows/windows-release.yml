@@ -85,7 +85,7 @@ jobs:
           path: |
             C:\local\boost_1_87_0
             C:\tools\mysql\current
-          key: winbuild-deps-boost-1.87.0-mysql-8.4.9
+          key: winbuild-deps-boost-1.87.0-mysql-8.4.10
 
       - name: Configure Windows dependencies
         shell: pwsh
@@ -121,17 +121,33 @@ jobs:
           }
           if (-not (Test-Path 'C:\local\boost_1_87_0\lib64-msvc-14.3')) { throw 'Boost MSVC 14.3 libraries are missing.' }
 
-          if (-not (Test-Path 'C:\tools\mysql\current\lib\mysqlclient.lib')) {
-            $mysqlZip = Join-Path $env:RUNNER_TEMP 'mysql.zip'
-            Invoke-WebRequest -Uri 'https://cdn.mysql.com/archives/mysql-8.4/mysql-8.4.9-winx64.zip' -OutFile $mysqlZip -UserAgent 'Mozilla/5.0'
+          $mysqlVersion = '8.4.10'
+          $mysqlRoot = 'C:\tools\mysql\current'
+          $mysqlVersionMarker = Join-Path $mysqlRoot '.arena-mysql-version'
+          $cachedMysqlVersion = if (Test-Path $mysqlVersionMarker) { (Get-Content -Raw $mysqlVersionMarker).Trim() } else { '' }
+          if ($cachedMysqlVersion -ne $mysqlVersion -or
+              -not (Test-Path (Join-Path $mysqlRoot 'lib\mysqlclient.lib')) -or
+              -not (Test-Path (Join-Path $mysqlRoot 'lib\libmysql.dll')) -or
+              -not (Test-Path (Join-Path $mysqlRoot 'bin'))) {
+            $mysqlZip = Join-Path $env:RUNNER_TEMP "mysql-$mysqlVersion-winx64.zip"
+            $mysqlUrl = "https://downloads.mysql.com/archives/get/p/23/file/mysql-$mysqlVersion-winx64.zip"
+            Invoke-WebRequest -Uri $mysqlUrl -OutFile $mysqlZip -UserAgent 'Mozilla/5.0'
             $sizeMB = (Get-Item $mysqlZip).Length / 1MB
             if ($sizeMB -lt 50) { throw "MySQL archive download is only $([int]$sizeMB) MB." }
             New-Item -ItemType Directory -Force -Path 'C:\tools\mysql' | Out-Null
+            if (Test-Path $mysqlRoot) { Remove-Item -Recurse -Force $mysqlRoot }
+            $extractedMysql = Join-Path 'C:\tools\mysql' "mysql-$mysqlVersion-winx64"
+            if (Test-Path $extractedMysql) { Remove-Item -Recurse -Force $extractedMysql }
             Expand-Archive -Path $mysqlZip -DestinationPath 'C:\tools\mysql' -Force
-            if (Test-Path 'C:\tools\mysql\current') { Remove-Item -Recurse -Force 'C:\tools\mysql\current' }
-            Rename-Item 'C:\tools\mysql\mysql-8.4.9-winx64' 'C:\tools\mysql\current'
+            if (-not (Test-Path (Join-Path $extractedMysql 'lib\mysqlclient.lib'))) {
+              throw "MySQL $mysqlVersion archive did not contain the expected Windows client import library."
+            }
+            Rename-Item -LiteralPath $extractedMysql -NewName 'current'
+            Set-Content -NoNewline -Path (Join-Path $mysqlRoot '.arena-mysql-version') -Value $mysqlVersion
           }
-          if (-not (Test-Path 'C:\tools\mysql\current\lib\mysqlclient.lib')) { throw 'MySQL client import library is missing.' }
+          foreach ($requiredPath in @('lib\mysqlclient.lib', 'lib\libmysql.dll', 'bin')) {
+            if (-not (Test-Path (Join-Path $mysqlRoot $requiredPath))) { throw "MySQL $mysqlVersion runtime file is missing: $requiredPath" }
+          }
 
           $opensslRoot = @($env:OPENSSL_ROOT_DIR, 'C:\Program Files\OpenSSL', 'C:\Program Files\OpenSSL-Win64') |
             Where-Object { $_ -and (Test-Path (Join-Path $_ 'include\openssl\opensslv.h')) } |
@@ -248,20 +264,47 @@ jobs:
         shell: pwsh
         run: python scripts/stage_runtime_configs.py --core-dir core --dist-dir core/env/dist
 
-      - name: Stage Windows runtime DLL dependencies
+      - name: Analyze and stage required Windows runtime DLLs
         shell: pwsh
         run: |
-          $dest = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist'
-          $dependencyDirs = @(
-            'C:\tools\mysql\current\bin',
-            'C:\openssl\bin',
-            'C:\local\boost_1_87_0\lib64-msvc-14.3'
-          )
-          foreach ($directory in $dependencyDirs) {
-            if (Test-Path $directory) {
-              Get-ChildItem -LiteralPath $directory -Filter '*.dll' -File | Copy-Item -Destination $dest -Force
+          $vcRedistDir = $null
+          if ($env:VCToolsRedistDir) {
+            $candidate = Join-Path $env:VCToolsRedistDir 'x64\Microsoft.VC143.CRT'
+            if (Test-Path $candidate) { $vcRedistDir = $candidate }
+          }
+          if (-not $vcRedistDir) {
+            $programFilesRoots = @(
+              [Environment]::GetFolderPath('ProgramFilesX86'),
+              [Environment]::GetFolderPath('ProgramFiles')
+            ) | Where-Object { $_ } | Select-Object -Unique
+            foreach ($programFilesRoot in $programFilesRoots) {
+              $redistPattern = Join-Path $programFilesRoot 'Microsoft Visual Studio\2022\*\VC\Redist\MSVC\*\x64\Microsoft.VC143.CRT'
+              $candidate = Get-ChildItem -Path $redistPattern -Directory -ErrorAction SilentlyContinue |
+                Sort-Object -Property FullName -Descending |
+                Select-Object -First 1
+              if ($candidate) {
+                $vcRedistDir = $candidate.FullName
+                break
+              }
             }
           }
+          if (-not $vcRedistDir) { throw 'Could not locate the x64 Microsoft.VC143.CRT redistributable directory.' }
+
+          $stageArgs = @(
+            '--binary-dir', 'core/env/dist',
+            '--mysql-lib-dir', 'C:\tools\mysql\current\lib',
+            '--mysql-bin-dir', 'C:\tools\mysql\current\bin',
+            '--openssl-bin-dir', 'C:\openssl\bin',
+            '--vc-redist-dir', $vcRedistDir,
+            '--output-dir', 'core/env/runtime-dlls',
+            '--mysql-version', '8.4.10'
+          )
+          $opensslModuleDir = @('C:\openssl\lib\ossl-modules', 'C:\openssl\ossl-modules') |
+            Where-Object { Test-Path (Join-Path $_ 'legacy.dll') } |
+            Select-Object -First 1
+          if ($opensslModuleDir) { $stageArgs += @('--openssl-module-dir', $opensslModuleDir) }
+          python scripts/stage_windows_runtime_dlls.py @stageArgs
+          if ($LASTEXITCODE -ne 0) { throw "Runtime dependency analysis/staging failed with exit code $LASTEXITCODE." }
 
       - name: Apply and verify installed runtime config
         shell: pwsh
@@ -284,7 +327,7 @@ jobs:
         env:
           INCLUDE_INDIVIDUAL_PROGRESSION: ${{ steps.build-variant.outputs.include_individual_progression }}
         run: |
-          $packageArgs = @('--dist-dir', 'core/env/dist', '--binary-dir', 'core/env/dist', '--config-dir', 'core/env/dist/configs', '--output', 'runtime-package')
+          $packageArgs = @('--dist-dir', 'core/env/dist', '--binary-dir', 'core/env/dist', '--dll-dir', 'core/env/runtime-dlls', '--config-dir', 'core/env/dist/configs', '--output', 'runtime-package')
           if ($env:INCLUDE_INDIVIDUAL_PROGRESSION -eq 'true') {
             $packageArgs += @('--include-module', 'mod-individual-progression')
           }
