@@ -86,11 +86,21 @@ jobs:
             C:\local\boost_1_87_0
             C:\tools\mysql\current
           key: winbuild-deps-boost-1.87.0-mysql-8.4.10
+          restore-keys: |
+            winbuild-deps-boost-1.87.0-mysql-
 
       - name: Configure Windows dependencies
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          trap {
+            $failureLine = $_.InvocationInfo.ScriptLineNumber
+            $failureText = ($_.Exception.Message -replace '[\r\n]+', ' ').Replace('%', '%25')
+            $message = "Windows dependency setup failed near line $failureLine`: $failureText"
+            Write-Output "::error title=Windows dependency setup::$message"
+            $message | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw $_.Exception
+          }
 
           if (-not (Test-Path 'C:\local\boost_1_87_0\boost\version.hpp')) {
             $boostExe = Join-Path $env:RUNNER_TEMP 'boost.exe'
@@ -120,6 +130,7 @@ jobs:
             if ($proc.ExitCode -ne 0) { throw "Boost installer failed with exit code $($proc.ExitCode)." }
           }
           if (-not (Test-Path 'C:\local\boost_1_87_0\lib64-msvc-14.3')) { throw 'Boost MSVC 14.3 libraries are missing.' }
+          Write-Host 'Boost dependency is ready.'
 
           $mysqlVersion = '8.4.10'
           $mysqlRoot = 'C:\tools\mysql\current'
@@ -148,6 +159,7 @@ jobs:
           foreach ($requiredPath in @('lib\mysqlclient.lib', 'lib\libmysql.dll', 'bin')) {
             if (-not (Test-Path (Join-Path $mysqlRoot $requiredPath))) { throw "MySQL $mysqlVersion runtime file is missing: $requiredPath" }
           }
+          Write-Host "MySQL $mysqlVersion client import library and libmysql.dll are ready."
 
           $opensslRoot = @($env:OPENSSL_ROOT_DIR, 'C:\Program Files\OpenSSL', 'C:\Program Files\OpenSSL-Win64') |
             Where-Object { $_ -and (Test-Path (Join-Path $_ 'include\openssl\opensslv.h')) } |
@@ -156,6 +168,7 @@ jobs:
           if (Test-Path 'C:\openssl') { Remove-Item -Recurse -Force 'C:\openssl' }
           New-Item -ItemType Junction -Path 'C:\openssl' -Target $opensslRoot | Out-Null
           "OPENSSL_ROOT_DIR=C:\openssl" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "OpenSSL dependency root configured at $opensslRoot."
 
           if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
             choco install ninja -y --no-progress
