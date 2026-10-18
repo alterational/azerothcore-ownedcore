@@ -4,14 +4,14 @@
 
 ## Audited module maps
 
-`config/module-switches.json` is the reviewed 70-module master-switch map: 51 source-verified switches, two approved upstream-default policies (City Life and Dungeon Clear), and 17 documented modules without an effective module-wide switch. It sets `Dynamic.XP.Rate = 1` for enabled Dynamic XP. See [`MODULE_CONFIG_AUDIT.md`](../MODULE_CONFIG_AUDIT.md) for the full table.
+`config/module-switches.json` is the reviewed 70-module master-switch map: 52 source-verified switches, two approved upstream-default policies (City Life and Dungeon Clear), and 16 documented modules without an effective module-wide switch. It sets `Dynamic.XP.Rate = 1` for enabled Dynamic XP and now includes the authorized Junk to Gold fork's `JunkToGold.Enable = 1`. See [`MODULE_CONFIG_AUDIT.md`](../MODULE_CONFIG_AUDIT.md) for the full table.
 
 `config/additional-module-settings.json` records two additional module settings:
 
 - `RDF.Expansion = 2`: checked against the pinned template and source; this already is the upstream Wrath-of-the-Lich-King default and is not overridden.
 - `TimeIsTime.SpeedRate = 15.0`: changes the pinned `1.0` default so one in-game day takes 96 real minutes, as requested from the OwnedCore post.
 
-For the normal build, `python3 scripts/prepare_build.py` applies both source-template maps and verifies the written values. The applicators use only tracked maps, preserve unrelated defaults, fail closed on unexpected values, and write atomically. Their `--check` modes remain available for a separate read-only audit; they are not necessary immediately after `--apply`. City Life remains enabled at `CityLife.Enable = 1`; Dungeon Clear remains enabled at `DungeonClear.Enable = 1`. No SQL is run.
+For the normal build, `python3 scripts/prepare_build.py` applies both source-template maps and verifies the written values. The applicators use only tracked maps, preserve unrelated defaults, fail closed on unexpected values, and write atomically. Their `--check` modes remain available for a separate read-only audit; they are not necessary immediately after `--apply`. City Life remains enabled at `CityLife.Enable = 1`. The source/runtime module map retains Dungeon Clear's upstream `DungeonClear.Enable = 1`, but the separate Windows packaging map intentionally changes only the generated active package copy to `0`; its public `.conf.dist` is not modified. No SQL is run.
 
 ## Core authserver/worldserver source defaults
 
@@ -38,7 +38,19 @@ The RDF expansion and Dynamic XP requests preserve pinned defaults; the only mod
 
 The pinned core builds active module config names from `core/modules/CMakeLists.txt`; `worldserver` passes them to `ConfigMgr::Configure`, and `ConfigMgr::LoadModulesConfigs` reads them from `<CONF_DIR>/modules/`. On Linux, `acore.sh compiler all` installs the `.conf.dist` files under `env/dist/etc/modules` and copies missing `.conf` runtime files with the default `AC_ENABLE_CONF_COPY_ON_INSTALL=1`. On Windows, the pinned core's CMake install rules put server executables directly under `env/dist` and config templates under `env/dist/configs/modules`; use that platform-specific path when checking installed runtime configs.
 
-After a successful build/install, apply and verify all runtime settings from the build-repository root with one command:
+## Active configs in the Windows package
+
+`scripts/package_runtime.py` first copies each selected public `.conf.dist` to the package unchanged, then creates a sibling `.conf` from the same bytes. It applies package-only changes afterward, leaving the `.conf.dist` untouched. The single editable map is [`config/package-config-edits.json`](../config/package-config-edits.json), whose paths are relative to package `etc/`; add entries there for `authserver.conf`, `worldserver.conf`, or a `modules/<filename>.conf` target.
+
+A missing target file or key, duplicate key, unreadable file, or incompatible value type produces a line in this form:
+
+```text
+WARNING: couldn't apply config edit for: modules/mod_ahbot.conf, key AuctionHouseBot.EnableSeller 0 true
+```
+
+The edit is skipped without inserting a new key or coercing a boolean to a number (or the reverse). Warnings are non-fatal: they do not fail compilation or stop archive creation. This packaging map is intentionally separate from source-template/runtime module policy; for example, it can override the active package copy without changing the checked source defaults.
+
+After a successful build/install, apply and verify all build-repository runtime settings from the repository root with one command:
 
 ```bash
 python3 scripts/prepare_build.py --runtime
@@ -49,7 +61,7 @@ On Linux, the default active directory is `core/env/dist/etc`. On Windows, use `
 ## Decisions and limits
 
 - All 14 initially runtime-off module sources remain in the standard build and are compiled even with their master switches set to `0`. Individual Progression is separate: it is not checked out/compiled in the standard build, and its source is included only on explicit opt-in. A config switch alone never substitutes for omitting or adding the source.
-- **Dungeon Clear stays enabled** at `DungeonClear.Enable = 1`; its duplicate disabled entry was stale. **City Life stays enabled** at its pinned default `CityLife.Enable = 1`.
-- Modules with no master switch are documented instead of receiving invented keys. AHBot seller/buyer toggles stay at their upstream `0` defaults.
+- City Life stays enabled at its pinned default `CityLife.Enable = 1`. Dungeon Clear remains included and manifest-enabled in the source build; the package-only map sets `DungeonClear.Enable = 0` in its generated active `.conf` while preserving the `.conf.dist` value and source selection.
+- Modules with no master switch are documented instead of receiving invented keys. The package map now edits only the existing numeric AHBot keys `AuctionHouseBot.EnableSeller = 1` and `AuctionHouseBot.ItemsPerCycle = 100`; it does not invent optional capacity/buyer/GUID/expiry keys absent from the pinned template.
 - Other prerequisites and setup are described in the pinned module READMEs and [`SQL_SETUP.md`](SQL_SETUP.md). They do not justify changing unspecified config defaults.
 - No credentials or server-specific active `.conf` files belong in Git. No database or SQL operation is performed by these scripts.

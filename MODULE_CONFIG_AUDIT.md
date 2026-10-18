@@ -1,6 +1,6 @@
 # Pinned module master-switch audit
 
-This audit is based on the pinned module sources reviewed on 2026-10-17. On 2026-10-18, five modules were moved to user-fork commits that contain their source-compatibility fixes: BGQueueChecker, AOE Loot, Challenge Modes, Dead Means Dead, and Playerbot Level Brackets. The reviewed diffs modify source code only; their `.conf.dist` templates are unchanged. Each listed master key was checked in its pinned `.conf.dist` and referenced by pinned C++ source. Other `Enable`-looking values are subfeatures and are intentionally not flipped. The runtime values are applied from `modules.manifest.json`; the manifest is authoritative for enabled/disabled state. The table covers every locked module, including Individual Progression, but the default build omits that module's source; its config is applied/checked only when the optional source is explicitly selected.
+This audit is based on the pinned module sources reviewed on 2026-10-17. On 2026-10-18, five modules were moved to user-fork commits that contain their source-compatibility fixes: BGQueueChecker, AOE Loot, Challenge Modes, Dead Means Dead, and Playerbot Level Brackets. The reviewed diffs modify source code only; their `.conf.dist` templates are unchanged. On 2026-10-19, the user explicitly authorized moving Junk to Gold to `notepadguyOfficial/mod-junk-to-gold` at `50ad84a88a85bfe98cb96f94c277e33fb5da03b9`; that fork adds `conf/mod-junk-to-gold.conf.dist` and reads `JunkToGold.Enable` from `src/junk_to_gold.h`. Compile compatibility with the pinned core remains pending a full build. Each listed master key was checked in its pinned `.conf.dist` and referenced by pinned C++ source. Other `Enable`-looking values are subfeatures and are intentionally not flipped. The runtime values are applied from `modules.manifest.json`; the manifest is authoritative for enabled/disabled state. The table covers every locked module, including Individual Progression, but the default build omits that module's source; its config is applied/checked only when the optional source is explicitly selected.
 
 ## How AzerothCore loads the module configuration files
 
@@ -64,6 +64,7 @@ Path settings (`DataDir`, `LogsDir`, `TempDir`, `SourceDirectory`, and `MySQLExe
 | ON | `mod-individual-progression` | `conf/individualProgression.conf.dist` | `IndividualProgression.Enable` | `1` | `1` | `src/IndividualProgression.cpp:1093` |
 | ON | `mod-individual-rates` | `conf/individual_rates.conf.dist` | `IndividualRates.Enabled` | `1` | `1` | `src/individual_rates.cpp:746` |
 | ON | `mod-instance-reset` | `conf/instance-reset.conf.dist` | `instanceReset.Enable` | `true` | `true` | `src/instance_reset.cpp:239` |
+| ON | `mod-junk-to-gold` | `conf/mod-junk-to-gold.conf.dist` | `JunkToGold.Enable` | `1` | `1` | `src/junk_to_gold.h:23` |
 | ON | `mod-learn-spells` | `conf/mod_learnspells.conf.dist` | `LearnSpells.Enable` | `1` | `1` | `src/mod_learnspells.cpp:33` |
 | ON | `mod-morphsummon` | `conf/morphsummon.conf.dist` | `MorphSummon.Enabled` | `1` | `1` | `src/morphsummon.cpp:528` |
 | ON | `mod-npc-beastmaster` | `conf/mod_npc_beastmaster.conf.dist` | `BeastMaster.Enable` | `1` | `1` | `src/NpcBeastmaster.cpp:337` |
@@ -106,7 +107,7 @@ Dungeon Clear is enabled at `DungeonClear.Enable = 1`; its duplicate disabled so
 
 ## Modules with no effective module-wide switch
 
-These 17 modules are still present/compiled. No key is invented or flipped; their master-state limitation or module-specific behavior is recorded below. Some have subordinate tuning options that remain at upstream defaults.
+These 16 modules are still present/compiled. No key is invented or flipped; their master-state limitation or module-specific behavior is recorded below. Some have subordinate tuning options that remain at upstream defaults.
 
 | Target | Module ID | Config template | Finding |
 |---|---|---|---|
@@ -117,7 +118,6 @@ These 17 modules are still present/compiled. No key is invented or flipped; thei
 | ON | `mod-emblem-transfer` | `conf/emblem_transfer.conf.dist` | The config contains transfer amount, penalty, and per-emblem options but no module-wide switch. |
 | ON | `mod-guildhouse` | `conf/mod_guildhouse.conf.dist` | The config contains guildhouse service prices/ranks but no module-wide switch. |
 | ON | `mod-improved-bank` | `conf/mod_improved_bank.conf.dist` | The config contains bank feature settings but no module-wide switch. |
-| ON | `mod-junk-to-gold` | — | No module .conf.dist or module-wide runtime switch was found; its source hooks are active when compiled. |
 | ON | `mod-low-level-rbg` | `conf/low_level_rbg.conf.dist` | The config sets queue level bounds only; no module-wide enable switch was found. |
 | ON | `mod-multibot-bridge` | `conf/MultiBotBridge.conf.dist` | The only config setting toggles console logging; it is not a module enable switch. |
 | ON | `mod-npc-talent-template` | `conf/npc_talent_template.conf.dist` | Config switches control individual gossip actions (reset talents, glyphs, and gear); no module-wide switch exists. |

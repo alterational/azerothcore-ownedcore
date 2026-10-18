@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from module_selection import excluded_module_ids, select_modules
+from package_config_edits import load_config_edits
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "modules.manifest.json"
@@ -153,7 +154,7 @@ def check_config_mapping(manifest: dict, lock: dict) -> tuple[int, int, int]:
     actual_upstream = {mid for mid, entry in mapped.items() if entry.get("status") == "upstream_default"}
     if actual_upstream != expected_upstream:
         fail(f"Only City Life and Dungeon Clear may use leave_upstream_default; got {sorted(actual_upstream)}")
-    if counts != {"master_switch": 51, "upstream_default": 2, "no_master_switch": 17}:
+    if counts != {"master_switch": 52, "upstream_default": 2, "no_master_switch": 16}:
         fail(f"Unexpected config map classification counts: {counts}")
     if by_id["mod-dungeon-clear"].get("enabled") is not True:
         fail("Dungeon Clear must not be disabled")
@@ -370,6 +371,7 @@ def check() -> tuple[dict, dict]:
 
     master_count, default_count, no_master_count = check_config_mapping(manifest, lock)
     additional_count = check_additional_settings_mapping(manifest, lock)
+    package_edit_count = len(load_config_edits())
     core_defaults_status = check_core_defaults_mapping(lock)
     default_source_count = len(select_modules(modules))
     print(
@@ -384,6 +386,7 @@ def check() -> tuple[dict, dict]:
     print(
         f"Additional settings valid: {additional_count} reviewed module defaults; core authserver/worldserver config status={core_defaults_status}."
     )
+    print(f"Package config edit map valid: {package_edit_count} editable active-config settings.")
     return manifest, lock
 
 

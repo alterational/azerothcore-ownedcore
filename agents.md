@@ -1,9 +1,9 @@
 # Agent handoff
 
-- **Updated:** 2026-10-18
+- **Updated:** 2026-10-19
 - **Repository:** `alterational/azerothcore-ownedcore`
 - **Session branch for the target handoff:** `arena/01a106ef-azerothcore-ownedcore`
-- **Last published commit on that branch:** `8af9eca`; PR #1 is open and must not be merged or closed without the user's instruction.
+- **PR:** #1 is open and must not be merged or closed without the user's instruction.
 
 ## Original purpose and OwnedCore reference baseline
 
@@ -46,13 +46,14 @@ The core pin is `alterational/azerothcore-wotlk.git`, branch `Playerbot`, commit
   | mod-dead-means-dead | `main` | `47fd15fb0c80e2e7ce36ba0b3188fcd3cb78e853` | `OnPlayerLogin` hook |
   | mod-player-bot-level-brackets | `main` | `0c9187fa05eecde09c6b89653350d0edf34eced2` | `EquipAndSpecPersistence` field spelling |
 
-- The known module compatibility fixes are in those fork commits. **There are no module-specific overlay patch files or patch steps.** Do not recreate module patches for these fixes. The latest fork pins have not yet been confirmed by a completed full Windows build, so report that limitation honestly.
+- Separately, the user explicitly authorized `mod-junk-to-gold` at `https://github.com/notepadguyOfficial/mod-junk-to-gold`, commit `50ad84a88a85bfe98cb96f94c277e33fb5da03b9`, to supply the matching `JunkToGold` config template. This is not one of the five source-compatibility fixes above; its compatibility with the pinned core is pending the new Windows build.
+- The five known module compatibility fixes are in those fork commits. **There are no module-specific overlay patch files or patch steps.** Do not recreate module patches for these fixes. Do not change any other source pin without explicit authorization.
 - Keep the inventory at 70 repositories: 56 enabled, 14 runtime-off. All remain pinned/installable; the default source build selects 69 non-Individual-Progression modules. Individual Progression is the only source opt-in.
-- City Life and Dungeon Clear remain enabled. Learn Spells must remain `https://github.com/azerothcore/mod-learn-spells`.
+- City Life remains enabled. Dungeon Clear remains present/manifest-enabled in the build source set, but the user's 2026-10-19 package request deliberately sets `DungeonClear.Enable = 0` only in the generated active package `.conf`; its public `.conf.dist` remains unchanged. Learn Spells must remain `https://github.com/azerothcore/mod-learn-spells`.
 - Never run SQL or apply database migrations. City Life's world SQL is manual.
 - The user creates and runs their own Codespace; do not create or launch one. Keep Windows builds at `MTHREADS=4` unless measured evidence and the user approve otherwise.
 - Do not commit generated `core/`, client/game data, maps, vmaps/mmaps, dumps, secrets, credentials, or machine-specific active configs. Never call an artifact or release final until the full workflow succeeds.
-- Public `.conf.dist` templates are part of the deliverable and must be copied byte-for-byte. Do not blank, redact, or rewrite their public defaults (including database or key-looking values); omit active machine-specific `.conf` files as before.
+- Public `.conf.dist` templates are part of the deliverable and must be copied byte-for-byte. Do not blank, redact, or rewrite their public defaults (including database or key-looking values). During Windows packaging, create each active `.conf` as a byte-identical sibling first, then apply only `config/package-config-edits.json` to the `.conf` copies. Never include installed machine-specific active configs. Missing files/keys and type mismatches emit the requested WARNING and must not fail compilation or packaging; never invent a missing key.
 - The user works from a phone and cannot use Git CLI. Do not delegate repository operations or ask for CLI commands.
 - The Windows workflow uses `cancel-in-progress: true`; check for an active run before any push that could cancel it. Do not push documentation-only changes during a long build.
 - If checkout history/files look inconsistent, fetch only the session branch, compare tracked blobs, and inspect extras before considering a reset. Never discard unreviewed workspace changes.
@@ -65,17 +66,18 @@ Two SHA-guarded **core** compatibility patches remain, both restricted to core c
 ## Verification status
 
 - Historical Windows run `39099758327` completed build, runtime-config checks, packaging, and artifact upload using the older module SHAs plus temporary compatibility overlays (now removed), with Individual Progression included. That artifact is interim, not validation of the current pins or default profile.
-- Windows run `39123849901` completed successfully for the default no-Individual-Progression PR profile, including build, runtime-config checks, packaging, and artifact upload. The old packaging code nevertheless blanked 30 public config values; that artifact is not the corrected deliverable and must not be treated as final.
-- The package fix is now to copy public `.conf.dist` templates byte-for-byte, with no redaction or rewriting. Re-run packaging/Windows Actions after this fix before treating an artifact as usable or publishing a release.
-- Local validation after the packaging/command consolidation passed: `python3 scripts/validate_project.py`, Python syntax compilation, 11 unit tests (package byte-for-byte checks plus preparation orchestration), JSON/pin/profile consistency, UTF-8 checks, and `git diff --check`.
+- Historical Windows run `39123849901` completed successfully for the then-current default no-Individual-Progression PR profile, including build, runtime-config checks, packaging, and artifact upload. It predates the newly authorized Junk to Gold pin, and the old packaging code blanked 30 public config values; that artifact does not validate the new source and is not the corrected deliverable.
+- The local Windows packaging code preserves public `.conf.dist` templates byte-for-byte, creates matching `.conf` siblings in the same relative directories, and applies `config/package-config-edits.json` only to active copies. Against the downloaded 68-template Windows artifact, it generated 68 `.conf` copies, applied all 39 mapped settings with zero warnings, set the existing numeric AHBot keys, and rechecked every `.conf.dist` as byte-identical. This is an end-to-end local package fixture, not a post-change Windows build; run Actions before treating a new artifact as final.
+- Local validation after this packaging update passed: `python3 scripts/validate_project.py`, Python syntax compilation, 12 unit tests (including template-copy, active-edit, Playerbots target, missing-key/file and type-warning behavior), JSON/pin/profile consistency, actual-artifact config smoke test, and `git diff --check`.
 - No full Linux/Codespaces build is recorded. No SQL, database migration, or live server test has been run.
 - PR #1 remains open. Recheck Actions before relying on this snapshot, and update this section after post-fix tests or a new run.
 
 ## Key files
 
 - `modules.manifest.json`, `modules.lock.json`: module inventory and exact source pins.
-- `config/module-switches.json`, `config/additional-module-settings.json`: reviewed configuration policy.
+- `config/module-switches.json`, `config/additional-module-settings.json`: reviewed source/runtime configuration policy; `config/package-config-edits.json` controls package-only active `.conf` edits.
 - `scripts/prepare_build.py`: one-command source preparation or post-install runtime configuration.
 - `scripts/validate_project.py`: manifest, lock, configuration-map, and source-selection checks.
+- `scripts/package_config_edits.py`, `scripts/package_runtime.py`: duplicate unchanged templates into package `.conf` copies, apply only mapped edits, and report non-fatal edit warnings.
 - `scripts/apply_core_compatibility_patches.py`: the two guarded core-only build fixes.
 - `MODULES.md`, `docs/BUILD.md`, `docs/SQL_SETUP.md`, `CHECKOUT_REPORT.md`: inventory and operating guidance.

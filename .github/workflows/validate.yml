@@ -24,7 +24,7 @@ jobs:
         run: python3 scripts/validate_project.py
       - name: Check Python syntax
         run: python3 -m py_compile scripts/*.py tests/*.py
-      - name: Test build source selection
+      - name: Run project tests
         run: python3 -m unittest discover -s tests
       - name: Parse JSON files
         run: |
@@ -32,6 +32,7 @@ jobs:
           python3 -m json.tool modules.lock.json >/dev/null
           python3 -m json.tool .devcontainer/devcontainer.json >/dev/null
           python3 -m json.tool config/module-switches.json >/dev/null
+          python3 -m json.tool config/package-config-edits.json >/dev/null
           python3 -m json.tool config/additional-module-settings.json >/dev/null
           python3 -m json.tool config/core-worldserver-defaults.json >/dev/null
           python3 -m json.tool config/core-authserver-defaults.json >/dev/null

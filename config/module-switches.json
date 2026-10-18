@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "audited_at": "2026-10-18",
+  "audited_at": "2026-10-19",
   "core_commit": "14c435031d2cb31b1af664af9a83c5d6256302b6",
   "source_of_target_state": "modules.manifest.json: modules[].enabled",
   "runtime_mechanism": {
@@ -470,13 +470,20 @@
       "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
     },
     "mod-junk-to-gold": {
-      "source_commit": "2134690bb03899e5c9e44d0682e8e6abf0bbbaf2",
+      "source_commit": "50ad84a88a85bfe98cb96f94c277e33fb5da03b9",
       "manifest_policy": "match_manifest_state",
-      "status": "no_master_switch",
-      "source_config": null,
-      "runtime_config": null,
-      "switch": null,
-      "review_note": "No module .conf.dist or module-wide runtime switch was found; its source hooks are active when compiled."
+      "status": "master_switch",
+      "source_config": "conf/mod-junk-to-gold.conf.dist",
+      "runtime_config": "mod-junk-to-gold.conf",
+      "switch": {
+        "key": "JunkToGold.Enable",
+        "upstream_default": "1",
+        "enabled_value": "1",
+        "disabled_value": "0",
+        "source_line": 17,
+        "code_reference": "src/junk_to_gold.h:23"
+      },
+      "review_note": "User-approved pin chosen for repack parity: adds the exact JunkToGold config template missing from noisiver/master and reads this master switch in source; compile compatibility with the pinned core remains to be tested."
     },
     "mod-learn-spells": {
       "source_commit": "016b92d520f343d074ffd5d46016a94f4a3a6ebd",

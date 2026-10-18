@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Package Windows runtime binaries and the selected pinned config templates unchanged.
+"""Package Windows binaries, unchanged config templates, and edited active copies.
 
 The package intentionally excludes game/client data, maps, SQL, database dumps,
-and active server-specific `.conf` files. Public `.conf.dist` templates are copied
-byte-for-byte; no config values are redacted or rewritten.
+and machine-specific active `.conf` files. Public `.conf.dist` templates are copied
+byte-for-byte; their `.conf` siblings are generated in the package and edited only
+by the reviewed, repository-controlled config map. Failed individual edits warn
+but do not fail packaging.
 """
 from __future__ import annotations
 
@@ -15,6 +17,7 @@ import sys
 import zipfile
 
 from module_selection import excluded_module_ids, select_modules
+from package_config_edits import DEFAULT_CONFIG_EDITS_PATH, stage_and_edit_configs
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK_PATH = ROOT / "modules.lock.json"
@@ -39,6 +42,12 @@ def main() -> int:
     parser.add_argument("--binary-dir", type=Path, help="directory containing installed executables/DLLs (default: <dist-dir>/bin)")
     parser.add_argument("--config-dir", type=Path, help="directory containing installed .conf.dist templates (default: <dist-dir>/etc)")
     parser.add_argument("--output", type=Path, default=ROOT / "runtime-package", help="output package directory")
+    parser.add_argument(
+        "--config-edits",
+        type=Path,
+        default=DEFAULT_CONFIG_EDITS_PATH,
+        help="JSON map of edits for generated active .conf copies",
+    )
     parser.add_argument(
         "--include-module",
         action="append",
@@ -89,21 +98,24 @@ def main() -> int:
     copied_configs = 0
     for source in template_sources:
         relative = source.relative_to(config_dir)
-        # Restrict packaging to the root runtime templates and installed module templates.
-        if relative.parts and relative.parts[0] not in {"modules"} and len(relative.parts) != 1:
-            continue
         destination = package_root / "etc" / relative
         copy_config_template(source, destination)
         copied_configs += 1
 
+    active_configs, applied_edits, config_warnings = stage_and_edit_configs(
+        package_root / "etc", args.config_edits.resolve()
+    )
+
     (package_root / "README.txt").write_text(
         "AzerothCore OwnedCore Windows runtime build.\n"
         "Source pins are recorded in the build repository's modules.lock.json.\n"
-        "This package contains server binaries and unchanged *.conf.dist templates only.\n"
+        "This package contains server binaries, unchanged *.conf.dist templates, and active .conf copies generated from those templates.\n"
+        "Only edits listed in the build repository's config/package-config-edits.json are applied to active copies; installed machine-specific configs are not copied.\n"
+        "Unapplied edits caused by a missing file/key or a value-type mismatch are reported as non-fatal warnings.\n"
         "Individual Progression source is "
         + ("included by explicit request.\n" if individual_progression_included else "omitted from the default build.\n")
-        + "Review the supplied config templates and set deployment-specific values before first startup.\n"
-        "Client/game data, maps, vmaps, mmaps, SQL dumps, and active server configs are not included.\n",
+        + "Review the supplied configs and set deployment-specific values before first startup.\n"
+        "Client/game data, maps, vmaps, mmaps, SQL dumps, and machine-specific active server configs are not included.\n",
         encoding="utf-8",
         newline="\n",
     )
@@ -128,8 +140,9 @@ def main() -> int:
 
     variant = "with Individual Progression" if individual_progression_included else "without Individual Progression"
     print(
-        f"Packaged {copied_binaries} Windows binaries/DLLs and {copied_configs} unchanged config templates "
-        f"({variant}). Archive: {archive}"
+        f"Packaged {copied_binaries} Windows binaries/DLLs, {copied_configs} unchanged .conf.dist templates, "
+        f"and {active_configs} active .conf copies; applied {applied_edits} config edits with "
+        f"{config_warnings} non-fatal warning(s) ({variant}). Archive: {archive}"
     )
     return 0
 
