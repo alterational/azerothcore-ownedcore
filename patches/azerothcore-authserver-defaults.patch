@@ -1,0 +1,6 @@
+diff --git a/src/server/apps/authserver/authserver.conf.dist b/src/server/apps/authserver/authserver.conf.dist
+--- a/src/server/apps/authserver/authserver.conf.dist
++++ b/src/server/apps/authserver/authserver.conf.dist
+@@ -412 +412 @@
+-Appender.Auth=2,5,0,Auth.log,w
++Appender.Auth=2,5,8,Auth.log,w

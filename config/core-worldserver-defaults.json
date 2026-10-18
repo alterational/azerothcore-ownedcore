@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "core_commit": "14c435031d2cb31b1af664af9a83c5d6256302b6",
+  "status": "pinned_in_core_fork",
+  "source_config": "src/server/apps/worldserver/worldserver.conf.dist",
+  "patch_file": "patches/azerothcore-worldserver-defaults.patch",
+  "description": "Worldserver defaults were compared with the user-provided active config at build-repository main commit 46c86b8f52445cb2baaff183e77ca2dd62f622b8. The selected portable defaults and four required core/module compatibility values are present in alterational/azerothcore-wotlk on Playerbot at 14c435031d2cb31b1af664af9a83c5d6256302b6; environment-specific paths remain unchanged.",
+  "settings": [
+    {
+      "key": "MapUpdate.Threads",
+      "upstream_default": "1",
+      "target": "4",
+      "evidence": "OwnedCore page 61 recommends setting MapUpdate.Threads to 4."
+    },
+    {
+      "key": "EnablePlayerSettings",
+      "upstream_default": "0",
+      "target": "1",
+      "evidence": "Pinned mod-individual-progression and mod-challenge-modes READMEs require character player settings."
+    },
+    {
+      "key": "DBC.EnforceItemAttributes",
+      "upstream_default": "1",
+      "target": "0",
+      "evidence": "Pinned mod-individual-progression README requires database values to override DBC item attributes."
+    },
+    {
+      "key": "ActivateWeather",
+      "upstream_default": "1",
+      "target": "0",
+      "evidence": "Pinned mod_weather_vibe README requires disabling the core WeatherMgr."
+    },
+    {
+      "key": "Appender.Server",
+      "upstream_default": "2,5,0,Server.log,w",
+      "target": "2,5,8,Server.log,w",
+      "evidence": "Main-branch worldserver.conf at 46c86b8 requests timestamped server log filenames (flag 8)."
+    },
+    {
+      "key": "Appender.Playerbots",
+      "upstream_default": "2,5,0,Playerbots.log,w",
+      "target": "2,5,8,Playerbots.log,w",
+      "evidence": "Main-branch worldserver.conf at 46c86b8 requests timestamped Playerbots log filenames (flag 8)."
+    },
+    {
+      "key": "Appender.Errors",
+      "upstream_default": "2,2,0,Errors.log,w",
+      "target": "2,2,8,Errors.log,w",
+      "evidence": "Main-branch worldserver.conf at 46c86b8 requests timestamped error log filenames (flag 8)."
+    },
+    {
+      "key": "Die.Command.Mode",
+      "upstream_default": "1",
+      "target": "0",
+      "evidence": "Main-branch worldserver.conf at 46c86b8 disables die-command side effects."
+    },
+    {
+      "key": "DungeonFinder.OptionsMask",
+      "upstream_default": "5",
+      "target": "5",
+      "evidence": "The previous locked core f19a187 already had 5; pre-update Playerbot tip 8a4e76e had 7. The user committed target 5 in the current Playerbot source, matching active worldserver.conf at build-repository main commit 46c86b8.",
+      "patch_base_default": "7"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+diff --git a/apps/compiler/includes/functions.sh b/apps/compiler/includes/functions.sh
+--- a/apps/compiler/includes/functions.sh
++++ b/apps/compiler/includes/functions.sh
+@@ -132,3 +132,3 @@ function comp_compile() {
+   case "$OSTYPE" in
+-    msys*)
++    msys*|cygwin*)
+       cmake --install . --config $CTYPE
