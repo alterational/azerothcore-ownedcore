@@ -470,7 +470,7 @@
       "review_note": "Only this module-level switch is mapped; subordinate Enable/Enabled options remain upstream values."
     },
     "mod-junk-to-gold": {
-      "source_commit": "50ad84a88a85bfe98cb96f94c277e33fb5da03b9",
+      "source_commit": "994797eaf7d010e88d3c27f962518d385f31314b",
       "manifest_policy": "match_manifest_state",
       "status": "master_switch",
       "source_config": "conf/mod-junk-to-gold.conf.dist",
@@ -483,7 +483,7 @@
         "source_line": 17,
         "code_reference": "src/junk_to_gold.h:23"
       },
-      "review_note": "User-approved pin chosen for repack parity: adds the exact JunkToGold config template missing from noisiver/master and reads this master switch in source; compile compatibility with the pinned core remains to be tested."
+      "review_note": "User-provided alterational fork keeps the repack-matching JunkToGold config template and renames PlayerScript callbacks to match the pinned core API; this master switch remains enabled, with the follow-up build pending."
     },
     "mod-learn-spells": {
       "source_commit": "016b92d520f343d074ffd5d46016a94f4a3a6ebd",

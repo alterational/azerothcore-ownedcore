@@ -64,7 +64,7 @@ The compatibility-sensitive module fixes are in the locked commits of the user's
 | mod-dead-means-dead | `47fd15fb0c80e2e7ce36ba0b3188fcd3cb78e853` | `OnPlayerLogin` hook |
 | mod-player-bot-level-brackets | `0c9187fa05eecde09c6b89653350d0edf34eced2` | Playerbots persistence config field |
 
-Junk to Gold is separately pinned, at the user's request, to `notepadguyOfficial/mod-junk-to-gold` commit `50ad84a88a85bfe98cb96f94c277e33fb5da03b9` because it includes the matching module config and `JunkToGold.Enable` switch. It is not one of the compatibility fixes above; confirm its compatibility with the pinned core through the full build.
+Junk to Gold is separately pinned to the user-provided `alterational/mod-junk-to-gold` commit `994797eaf7d010e88d3c27f962518d385f31314b`. The previous candidate failed on two `PlayerScript` callback names; this follow-up renames them to the pinned core API while retaining the matching config and `JunkToGold.Enable` switch. Confirm the correction with the full build.
 
 The module configuration commands run before compilation so generated `.conf.dist` templates match tracked policy. On Linux, runtime configuration is under `core/env/dist/etc`; on Windows, the pinned core installs templates under `core/env/dist/configs`. Pass `--config-dir <path>` when using a non-default runtime config location.
 

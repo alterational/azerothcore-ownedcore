@@ -228,9 +228,9 @@
       "refresh_ok": true
     },
     "mod-junk-to-gold": {
-      "url": "https://github.com/notepadguyOfficial/mod-junk-to-gold.git",
+      "url": "https://github.com/alterational/mod-junk-to-gold.git",
       "branch": "master",
-      "commit": "50ad84a88a85bfe98cb96f94c277e33fb5da03b9",
+      "commit": "994797eaf7d010e88d3c27f962518d385f31314b",
       "resolved": true,
       "refresh_ok": true
     },
