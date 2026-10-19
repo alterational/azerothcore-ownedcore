@@ -1,0 +1,379 @@
+name: Windows runtime build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      include_individual_progression:
+        description: Include the optional Individual Progression module source in this build
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: windows-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build pinned core and selected modules (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 360
+    outputs:
+      core_config_ready: ${{ steps.core-readiness.outputs.ready }}
+      include_individual_progression: ${{ steps.build-variant.outputs.include_individual_progression }}
+      artifact_name: ${{ steps.build-variant.outputs.artifact_name }}
+    env:
+      BOOST_ROOT: C:\local\boost_1_87_0
+      CMAKE_GENERATOR: Ninja
+      CTOOLS_BUILD: none
+      CMODULES: static
+    steps:
+      - name: Check out build repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Select requested build variant
+        id: build-variant
+        shell: pwsh
+        env:
+          REQUESTED_INCLUDE_INDIVIDUAL_PROGRESSION: ${{ github.event_name == 'workflow_dispatch' && inputs.include_individual_progression || false }}
+        run: |
+          $includeModule = $env:REQUESTED_INCLUDE_INDIVIDUAL_PROGRESSION -eq 'true'
+          if ($includeModule) {
+            $artifactName = 'azerothcore-ownedcore-windows-with-individual-progression'
+            $variant = 'WITH Individual Progression (explicit opt-in)'
+          }
+          else {
+            $artifactName = 'azerothcore-ownedcore-windows'
+            $variant = 'without Individual Progression (default)'
+          }
+          "include_individual_progression=$($includeModule.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "artifact_name=$artifactName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "## Windows build variant: $variant" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          Write-Host "Selected variant: $variant"
+
+      - name: Enable long Git paths
+        shell: pwsh
+        run: git config --global core.longpaths true
+
+      - name: Prepare and verify selected locked sources
+        shell: pwsh
+        env:
+          INCLUDE_INDIVIDUAL_PROGRESSION: ${{ steps.build-variant.outputs.include_individual_progression }}
+        run: |
+          $prepareArgs = @()
+          if ($env:INCLUDE_INDIVIDUAL_PROGRESSION -eq 'true') {
+            $prepareArgs += @('--include-module', 'mod-individual-progression')
+          }
+          python scripts/prepare_build.py @prepareArgs
+
+      - name: Cache Boost and MySQL client
+        uses: actions/cache@v6
+        with:
+          path: |
+            C:\local\boost_1_87_0
+            C:\tools\mysql\current
+          key: winbuild-deps-boost-1.87.0-mysql-8.0.46
+          restore-keys: |
+            winbuild-deps-boost-1.87.0-mysql-
+
+      - name: Configure Windows dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          trap {
+            $failureLine = $_.InvocationInfo.ScriptLineNumber
+            $failureText = ($_.Exception.Message -replace '[\r\n]+', ' ').Replace('%', '%25')
+            $message = "Windows dependency setup failed near line $failureLine`: $failureText"
+            Write-Output "::error title=Windows dependency setup::$message"
+            $message | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw $_.Exception
+          }
+
+          if (-not (Test-Path 'C:\local\boost_1_87_0\boost\version.hpp')) {
+            $boostExe = Join-Path $env:RUNNER_TEMP 'boost.exe'
+            $boostUrl = 'https://downloads.sourceforge.net/project/boost/boost-binaries/1.87.0/boost_1_87_0-msvc-14.3-64.exe'
+            $request = @{
+              Uri = $boostUrl
+              OutFile = $boostExe
+              UserAgent = 'azerothcore-ci'
+              ConnectionTimeoutSeconds = 60
+              OperationTimeoutSeconds = 60
+            }
+            $attempts = 3
+            for ($attempt = 1; $attempt -le $attempts; $attempt++) {
+              try {
+                Invoke-WebRequest @request
+                $sizeMB = (Get-Item $boostExe).Length / 1MB
+                if ($sizeMB -lt 50) { throw "Boost download is only $([int]$sizeMB) MB." }
+                break
+              }
+              catch {
+                Write-Host "Boost download attempt $attempt failed: $($_.Exception.Message)"
+                if ($attempt -eq $attempts) { throw }
+                Start-Sleep -Seconds 15
+              }
+            }
+            $proc = Start-Process -FilePath $boostExe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/DIR=C:\local\boost_1_87_0' -Wait -PassThru
+            if ($proc.ExitCode -ne 0) { throw "Boost installer failed with exit code $($proc.ExitCode)." }
+          }
+          if (-not (Test-Path 'C:\local\boost_1_87_0\lib64-msvc-14.3')) { throw 'Boost MSVC 14.3 libraries are missing.' }
+          Write-Host 'Boost dependency is ready.'
+
+          $mysqlVersion = '8.0.46'
+          $mysqlRoot = 'C:\tools\mysql\current'
+          $mysqlVersionMarker = Join-Path $mysqlRoot '.arena-mysql-version'
+          $cachedMysqlVersion = if (Test-Path $mysqlVersionMarker) { (Get-Content -Raw $mysqlVersionMarker).Trim() } else { '' }
+          if ($cachedMysqlVersion -ne $mysqlVersion -or
+              -not (Test-Path (Join-Path $mysqlRoot 'lib\mysqlclient.lib')) -or
+              -not (Test-Path (Join-Path $mysqlRoot 'lib\libmysql.dll')) -or
+              -not (Test-Path (Join-Path $mysqlRoot 'bin\\mysqld.exe'))) {
+            $mysqlZip = Join-Path $env:RUNNER_TEMP "mysql-$mysqlVersion-winx64.zip"
+            $mysqlUrl = "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-$mysqlVersion-winx64.zip"
+            Invoke-WebRequest -Uri $mysqlUrl -OutFile $mysqlZip -UserAgent 'Mozilla/5.0'
+            $sizeMB = (Get-Item $mysqlZip).Length / 1MB
+            if ($sizeMB -lt 50) { throw "MySQL archive download is only $([int]$sizeMB) MB." }
+            New-Item -ItemType Directory -Force -Path 'C:\tools\mysql' | Out-Null
+            if (Test-Path $mysqlRoot) { Remove-Item -Recurse -Force $mysqlRoot }
+            $extractedMysql = Join-Path 'C:\tools\mysql' "mysql-$mysqlVersion-winx64"
+            if (Test-Path $extractedMysql) { Remove-Item -Recurse -Force $extractedMysql }
+            Expand-Archive -Path $mysqlZip -DestinationPath 'C:\tools\mysql' -Force
+            if (-not (Test-Path (Join-Path $extractedMysql 'lib\mysqlclient.lib'))) {
+              throw "MySQL $mysqlVersion archive did not contain the expected Windows client import library."
+            }
+            Rename-Item -LiteralPath $extractedMysql -NewName 'current'
+            Set-Content -NoNewline -Path (Join-Path $mysqlRoot '.arena-mysql-version') -Value $mysqlVersion
+          }
+          foreach ($requiredPath in @('lib\mysqlclient.lib', 'lib\libmysql.dll', 'bin', 'bin\\mysqld.exe')) {
+            if (-not (Test-Path (Join-Path $mysqlRoot $requiredPath))) { throw "MySQL $mysqlVersion runtime file is missing: $requiredPath" }
+          }
+          Write-Host "MySQL $mysqlVersion client import library and libmysql.dll are ready."
+
+          $opensslRoot = @($env:OPENSSL_ROOT_DIR, 'C:\Program Files\OpenSSL', 'C:\Program Files\OpenSSL-Win64') |
+            Where-Object { $_ -and (Test-Path (Join-Path $_ 'include\openssl\opensslv.h')) } |
+            Select-Object -First 1
+          if (-not $opensslRoot) { throw 'No OpenSSL development install found on the runner image.' }
+          if (Test-Path 'C:\openssl') { Remove-Item -Recurse -Force 'C:\openssl' }
+          New-Item -ItemType Junction -Path 'C:\openssl' -Target $opensslRoot | Out-Null
+          "OPENSSL_ROOT_DIR=C:\openssl" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "OpenSSL dependency root configured at $opensslRoot."
+
+          if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) {
+            choco install ninja -y --no-progress
+            $chocoBin = Join-Path $env:ChocolateyInstall 'bin'
+            if (Test-Path $chocoBin) {
+              $env:Path = "$chocoBin;$env:Path"
+              $chocoBin | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+            }
+          }
+          if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) { throw 'Ninja is unavailable after installation.' }
+          ninja --version
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+
+      - name: Configure AzerothCore for Windows
+        shell: pwsh
+        run: |
+          @'
+          CCOMPILERC="cl"
+          CCOMPILERCXX="cl"
+          CTYPE="RelWithDebInfo"
+          CSCRIPTS="static"
+          CMODULES="static"
+          CTOOLS_BUILD="none"
+          CCUSTOMOPTIONS="-DBOOST_ROOT=C:/local/boost_1_87_0 -DOPENSSL_ROOT_DIR=C:/openssl -DOPENSSL_USE_STATIC_LIBS=FALSE -DCMAKE_RC_COMPILER=rc -DCMAKE_NINJA_FORCE_RESPONSE_FILE=ON -DCMAKE_NINJA_CMCLDEPS_RC=OFF -DCMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS=ON -DCMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS=ON -DCMAKE_C_USE_RESPONSE_FILE_FOR_INCLUDES=ON -DCMAKE_CXX_USE_RESPONSE_FILE_FOR_INCLUDES=ON -DCMAKE_C_USE_RESPONSE_FILE_FOR_LIBRARIES=ON -DCMAKE_CXX_USE_RESPONSE_FILE_FOR_LIBRARIES=ON"
+          '@ | Set-Content -Path 'core/conf/config.sh' -Encoding ascii
+          Get-Content 'core/conf/config.sh'
+
+      - name: Use a short path for the Windows build
+        shell: pwsh
+        run: |
+          if (Test-Path 'Z:\') { throw 'Z: is already occupied; cannot create the short build path.' }
+          $coreRoot = Join-Path $env:GITHUB_WORKSPACE 'core'
+          & subst Z: $coreRoot
+          if ($LASTEXITCODE -ne 0) { throw "Failed to map $coreRoot to Z:." }
+          if (-not (Test-Path 'Z:\acore.sh')) { throw 'The short path does not expose the core checkout.' }
+          & git config --global --add safe.directory 'Z:/'
+          $modules = Get-ChildItem -LiteralPath 'Z:\modules' -Directory
+          foreach ($module in $modules) {
+            & git config --global --add safe.directory $module.FullName
+          }
+          Write-Host "Mapped $coreRoot to Z:\ to keep Windows resource-compiler commands below the CreateProcess limit."
+
+      - name: Build and install server
+        id: windows-build
+        shell: bash
+        working-directory: core
+        env:
+          MTHREADS: "4"
+          CC: cl
+          CXX: cl
+          RC: rc
+        run: |
+          cd /z
+          printf 'Short build root: %s\n' "$(pwd -W)"
+          test -f ./acore.sh
+          set -o pipefail
+          ./acore.sh compiler all 2>&1 | tee windows-build.log
+          for binary in authserver.exe worldserver.exe; do
+            if [[ -f "env/dist/$binary" ]]; then
+              printf 'Verified installed server binary: /z/env/dist/%s\n' "$binary"
+              continue
+            fi
+            message="Missing installed binary /z/env/dist/$binary."
+            for candidate in "var/build/obj/bin/$binary" "var/build/obj/$binary"; do
+              if [[ -f "$candidate" ]]; then
+                message="$message Build-tree copy exists at /z/$candidate."
+              fi
+            done
+            printf '%s\n' "$message" | tee -a windows-build.log >&2
+            printf '::error title=Windows install output::%s\n' "$message"
+            exit 1
+          done
+
+      - name: Surface Windows build errors in the check run
+        if: failure() && steps.windows-build.outcome == 'failure'
+        shell: pwsh
+        run: |
+          $log = Join-Path (Join-Path $env:GITHUB_WORKSPACE 'core') 'windows-build.log'
+          if (-not (Test-Path $log)) {
+            Write-Output '::error title=Windows build diagnostics::Build log was not created.'
+            exit 0
+          }
+          $errors = Select-String -Path $log -Pattern 'error C[0-9]+|fatal error|error:|CMake Error|FAILED:|ninja: build stopped' | Select-Object -Last 30
+          $tail = Get-Content -LiteralPath $log -Tail 80
+          '### Windows build diagnostics' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          $errors | ForEach-Object { $_.Line | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8 }
+          $tail | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          if ($errors) {
+            foreach ($errorLine in $errors) { Write-Output "::error title=Windows build diagnostic::$($errorLine.Line)" }
+          }
+          else {
+            $fallback = ($tail | Select-Object -Last 20) -join "`n"
+            if ($fallback.Length -gt 8000) { $fallback = $fallback.Substring($fallback.Length - 8000) }
+            $fallback = $fallback.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            if (-not $fallback) { $fallback = 'No build output was captured.' }
+            Write-Output "::error title=Windows build tail::$fallback"
+          }
+
+      - name: Stage fresh runtime config files
+        shell: pwsh
+        run: python scripts/stage_runtime_configs.py --core-dir core --dist-dir core/env/dist
+
+      - name: Analyze and stage required Windows runtime DLLs
+        shell: pwsh
+        run: |
+          $stageArgs = @(
+            '--binary-dir', 'core/env/dist',
+            '--mysql-lib-dir', 'C:\tools\mysql\current\lib',
+            '--mysql-bin-dir', 'C:\tools\mysql\current\bin',
+            '--openssl-bin-dir', 'C:\openssl\bin',
+            '--output-dir', 'core/env/runtime-dlls',
+            '--mysql-version', '8.0.46'
+          )
+          $opensslModuleDir = @('C:\openssl\lib\ossl-modules', 'C:\openssl\ossl-modules') |
+            Where-Object { Test-Path (Join-Path $_ 'legacy.dll') } |
+            Select-Object -First 1
+          if ($opensslModuleDir) { $stageArgs += @('--openssl-module-dir', $opensslModuleDir) }
+          $stageOutput = & python scripts/stage_windows_runtime_dlls.py @stageArgs 2>&1
+          $stageExitCode = $LASTEXITCODE
+          $stageOutput | ForEach-Object { Write-Host $_ }
+          if ($stageExitCode -ne 0) {
+            $detail = (($stageOutput | Select-Object -Last 20) -join ' | ') -replace '[\r\n]+', ' '
+            $detail = $detail.Replace('%', '%25')
+            $message = "Windows runtime DLL staging failed (exit $stageExitCode): $detail"
+            Write-Output "::error title=Windows runtime DLL staging::$message"
+            $message | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw $message
+          }
+
+      - name: Apply and verify installed runtime config
+        shell: pwsh
+        run: |
+          $configDir = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist\configs'
+          python scripts/prepare_build.py --runtime --config-dir "$configDir"
+
+      - name: Record core config readiness for publication
+        id: core-readiness
+        shell: pwsh
+        run: |
+          $world = Get-Content -Raw 'config/core-worldserver-defaults.json' | ConvertFrom-Json
+          $auth = Get-Content -Raw 'config/core-authserver-defaults.json' | ConvertFrom-Json
+          $ready = ($world.status -eq 'pinned_in_core_fork') -and ($auth.status -eq 'pinned_in_core_fork')
+          "ready=$($ready.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Package Windows runtime
+        if: steps.core-readiness.outputs.ready == 'true'
+        shell: pwsh
+        env:
+          INCLUDE_INDIVIDUAL_PROGRESSION: ${{ steps.build-variant.outputs.include_individual_progression }}
+        run: |
+          $packageArgs = @(
+            '--dist-dir', 'core/env/dist',
+            '--binary-dir', 'core/env/dist',
+            '--dll-dir', 'core/env/runtime-dlls',
+            '--mysql-dir', 'C:\\tools\\mysql\\current',
+            '--config-dir', 'core/env/dist/configs',
+            '--output', 'runtime-package'
+          )
+          if ($env:INCLUDE_INDIVIDUAL_PROGRESSION -eq 'true') {
+            $packageArgs += @('--include-module', 'mod-individual-progression')
+          }
+          $packageOutput = & python scripts/package_runtime.py @packageArgs 2>&1
+          $packageExitCode = $LASTEXITCODE
+          $packageOutput | ForEach-Object { Write-Host $_ }
+          if ($packageExitCode -ne 0) {
+            $detail = (($packageOutput | Select-Object -Last 20) -join ' | ') -replace '[\r\n]+', ' '
+            $detail = $detail.Replace('%', '%25')
+            $message = "Windows runtime packaging failed (exit $packageExitCode): $detail"
+            Write-Output "::error title=Windows runtime packaging::$message"
+            $message | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw $message
+          }
+
+      - name: Upload successful Windows runtime artifact
+        if: steps.core-readiness.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build-variant.outputs.artifact_name }}
+          path: runtime-package/azerothcore-ownedcore-windows.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish version-tagged Windows release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') && needs.build.outputs.core_config_ready == 'true' && needs.build.outputs.include_individual_progression != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download successful Windows runtime artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: release-assets
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: release-assets/azerothcore-ownedcore-windows.zip
