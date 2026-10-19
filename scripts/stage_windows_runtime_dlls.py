@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Stage only the PE import closure and explicitly required dynamic providers.
+"""Stage the four release DLLs and verify the server import closure.
 
-The package build is Windows-only and uses Microsoft's `dumpbin /DEPENDENTS` to
-walk dependencies from authserver.exe, worldserver.exe, the MySQL client DLL,
-OpenSSL, and the app-local VC++ runtime. Boost DLLs and unrelated dependency
-binaries are never searched or copied. OpenSSL's legacy provider is included
-explicitly because it is loaded dynamically rather than appearing in the PE
-import table.
+The package build uses Microsoft's `dumpbin /DEPENDENTS` to analyze both server
+executables and their selected DLLs. Only the MySQL client DLL, OpenSSL DLLs, and
+OpenSSL's dynamically loaded legacy provider are staged beside the executables.
+The VC++ runtime is an external Windows prerequisite and is not bundled.
 """
 from __future__ import annotations
 
@@ -29,8 +27,9 @@ REQUIRED_RUNTIME_DLLS = (
 )
 DEPENDENCY_RE = re.compile(r"^\s*([A-Za-z0-9_.+-]+\.dll)\s*$", re.IGNORECASE)
 SYSTEM_API_PREFIXES = ("api-ms-win-", "ext-ms-win-")
+VC_RUNTIME_DLL_RE = re.compile(r"^(?:concrt|msvcp|vccorlib|vcruntime|vcomp)\d+.*\.dll$", re.IGNORECASE)
 DEBUG_DLL_RE = re.compile(
-    r"(?:-debug(?:-|\.)|(?:^|[-_])gd(?:[-_.]|$)|(?:msvcp|vcruntime|concrt)\d+d\.dll$)",
+    r"(?:-debug(?:-|\.)|(?:^|[-_])gd(?:[-_.]|$)|(?:msvcp|vcruntime|concrt|vccorlib|vcomp)\d+d\.dll$)",
     re.IGNORECASE,
 )
 DependencyReader = Callable[[Path], Iterable[str]]
@@ -39,6 +38,11 @@ DependencyReader = Callable[[Path], Iterable[str]]
 def is_debug_dll(name: str) -> bool:
     """Reject debug CRT/third-party variants from release packages."""
     return bool(DEBUG_DLL_RE.search(name))
+
+
+def is_external_vc_runtime_dll(name: str) -> bool:
+    """Identify VC++ runtime files supplied by the machine's installed runtime."""
+    return bool(VC_RUNTIME_DLL_RE.fullmatch(name))
 
 
 def parse_dumpbin_dependents(output: str) -> list[str]:
@@ -112,7 +116,6 @@ def stage_runtime_dependencies(
     mysql_bin_dir: Path,
     openssl_bin_dir: Path,
     openssl_module_dir: Path | None,
-    vc_redist_dir: Path,
     output_dir: Path,
     system_dir: Path,
     mysql_version: str,
@@ -120,19 +123,16 @@ def stage_runtime_dependencies(
 ) -> dict:
     """Copy a minimal release DLL set and return the staged inventory.
 
-    The import walk is recursive and fails closed when a non-Windows dependency
-    cannot be resolved. All release DLLs from the selected x64 VC++ CRT app-local
-    directory are included; any redistributable manifest present there is copied.
-    Only PE dependencies from the remaining
-    candidate directories are copied. `legacy.dll` is an explicit dynamic-load
-    dependency and is therefore seeded into the walk even though dumpbin cannot
-    discover it from the executable imports.
+    The import walk is recursive and fails closed when a non-system, non-VC++
+    dependency cannot be resolved or would require a fifth root DLL. The VC++
+    runtime is recorded as a machine prerequisite but is never copied. The
+    MySQL and OpenSSL DLL candidates are searched only to resolve the four
+    approved root DLLs. `legacy.dll` is seeded because OpenSSL loads it by name.
     """
     binary_dir = binary_dir.resolve()
     mysql_lib_dir = mysql_lib_dir.resolve()
     mysql_bin_dir = mysql_bin_dir.resolve()
     openssl_bin_dir = openssl_bin_dir.resolve()
-    vc_redist_dir = vc_redist_dir.resolve()
     system_dir = system_dir.resolve()
     output_dir = output_dir.resolve()
     openssl_module_dir = openssl_module_dir.resolve() if openssl_module_dir else None
@@ -144,7 +144,6 @@ def stage_runtime_dependencies(
         "MySQL lib directory": mysql_lib_dir,
         "MySQL bin directory": mysql_bin_dir,
         "OpenSSL bin directory": openssl_bin_dir,
-        "VC143 CRT redist directory": vc_redist_dir,
     }
     for label, directory in required_dirs.items():
         if not directory.is_dir():
@@ -156,28 +155,11 @@ def stage_runtime_dependencies(
         raise RuntimeError(f"Refusing to overwrite nonempty runtime DLL staging directory: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    crt_dlls = [
-        path for path in sorted(vc_redist_dir.iterdir())
-        if path.is_file() and path.suffix.casefold() == ".dll" and not is_debug_dll(path.name)
-    ]
-    if not crt_dlls:
-        raise RuntimeError(f"No release VC++ runtime DLLs found under {vc_redist_dir}")
-    for source in crt_dlls:
-        _copy_runtime_file(source, source, output_dir)
-
-    crt_manifests = [
-        path for path in sorted(vc_redist_dir.iterdir())
-        if path.is_file() and path.suffix.casefold() == ".manifest"
-    ]
-    for manifest in crt_manifests:
-        shutil.copy2(manifest, output_dir / manifest.name)
-
     search_dirs = [
         output_dir,
         mysql_lib_dir,
         openssl_bin_dir,
         *([openssl_module_dir] if openssl_module_dir else []),
-        vc_redist_dir,
         mysql_bin_dir,
         binary_dir,
     ]
@@ -200,6 +182,7 @@ def stage_runtime_dependencies(
     queue.extend(sorted(output_dir.glob("*.dll")))
     visited: set[str] = set()
     system_imports: set[str] = set()
+    external_vc_runtime_imports: set[str] = set()
     while queue:
         binary = queue.pop(0)
         identity = binary.name.casefold()
@@ -218,11 +201,19 @@ def stage_runtime_dependencies(
             if is_windows_system_dll(dependency, system_dir):
                 system_imports.add(dependency)
                 continue
+            if is_external_vc_runtime_dll(dependency):
+                external_vc_runtime_imports.add(dependency)
+                continue
             source = candidates.get(key)
             if source is None:
                 raise RuntimeError(
                     f"Unresolved non-system DLL dependency {dependency} imported by {binary.name}; "
-                    "refusing to create a package that may not start on a clean Windows machine"
+                    "refusing to create a potentially incomplete package"
+                )
+            if key not in {name.casefold() for name in REQUIRED_RUNTIME_DLLS}:
+                raise RuntimeError(
+                    f"Additional private dependency {dependency} imported by {binary.name} would exceed "
+                    "the four-DLL release layout; refusing to add it to the package root"
                 )
             target = output_dir / dependency
             if not target.exists():
@@ -237,11 +228,11 @@ def stage_runtime_dependencies(
     report = {
         "schema_version": 1,
         "mysql_client_version": mysql_version,
-        "selection": "recursive PE import closure of authserver.exe and worldserver.exe, plus OpenSSL legacy provider and app-local VC143 CRT",
+        "selection": "four root application DLLs; OS and VC++ runtime dependencies are external prerequisites",
         "server_binaries": list(SERVER_BINARIES),
         "dynamic_dependencies": ["legacy.dll"],
         "runtime_dlls": dll_names,
-        "vc_runtime_manifests": [path.name for path in crt_manifests],
+        "external_vc_runtime_imports": sorted(external_vc_runtime_imports, key=str.casefold),
         "system_imports_not_packaged": sorted(system_imports, key=str.casefold),
     }
     (output_dir / "RUNTIME-DLLS.json").write_text(
@@ -257,7 +248,6 @@ def main() -> int:
     parser.add_argument("--mysql-bin-dir", type=Path, required=True, help="MySQL 8.4.x bin directory with transitive client dependencies")
     parser.add_argument("--openssl-bin-dir", type=Path, required=True, help="selected OpenSSL bin directory")
     parser.add_argument("--openssl-module-dir", type=Path, help="optional OpenSSL provider module directory")
-    parser.add_argument("--vc-redist-dir", type=Path, required=True, help="x64 release VC++ CRT app-local redist directory containing the runtime DLLs")
     parser.add_argument("--system-dir", type=Path, help="Windows System32 directory (defaults to %WINDIR%/System32)")
     parser.add_argument("--output-dir", type=Path, required=True, help="empty staging directory for the minimal DLL closure")
     parser.add_argument("--mysql-version", default="8.4.10", help="MySQL client version recorded in the inventory")
@@ -271,15 +261,14 @@ def main() -> int:
         mysql_bin_dir=args.mysql_bin_dir,
         openssl_bin_dir=args.openssl_bin_dir,
         openssl_module_dir=args.openssl_module_dir,
-        vc_redist_dir=args.vc_redist_dir,
         output_dir=args.output_dir,
         system_dir=system_dir,
         mysql_version=args.mysql_version,
         dependency_reader=lambda path: dumpbin_dependencies(path, args.dumpbin),
     )
     print(
-        f"Staged {len(report['runtime_dlls'])} required release DLLs for authserver.exe and worldserver.exe "
-        f"(MySQL {args.mysql_version}; OpenSSL legacy provider included; no Boost DLLs)."
+        f"Staged {len(report['runtime_dlls'])} root DLLs for authserver.exe and worldserver.exe "
+        f"(MySQL {args.mysql_version}; VC++ runtime left external; OpenSSL legacy provider included)."
     )
     return 0
 

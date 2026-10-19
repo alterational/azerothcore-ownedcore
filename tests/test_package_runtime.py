@@ -19,9 +19,6 @@ RUNTIME_DLLS = [
     "libcrypto-3-x64.dll",
     "libssl-3-x64.dll",
     "legacy.dll",
-    "msvcp140.dll",
-    "vcruntime140.dll",
-    "vcruntime140_1.dll",
 ]
 
 
@@ -30,9 +27,13 @@ def make_runtime_dll_fixture(directory: Path, extra_dlls: tuple[str, ...] = ()) 
     names = RUNTIME_DLLS + list(extra_dlls)
     for name in names:
         (directory / name).write_bytes(("fixture: " + name).encode())
-    (directory / "Microsoft.VC143.CRT.manifest").write_text("<assembly />\n", encoding="utf-8")
     (directory / "RUNTIME-DLLS.json").write_text(
-        json.dumps({"schema_version": 1, "mysql_client_version": "8.4.10", "runtime_dlls": names, "vc_runtime_manifests": ["Microsoft.VC143.CRT.manifest"]}, indent=2) + "\n",
+        json.dumps({
+            "schema_version": 1,
+            "mysql_client_version": "8.4.10",
+            "runtime_dlls": names,
+            "external_vc_runtime_imports": ["MSVCP140.dll", "VCRUNTIME140.dll"],
+        }, indent=2) + "\n",
         encoding="utf-8",
     )
 
@@ -78,6 +79,13 @@ class PackageConfigTemplateTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "Boost DLLs|Debug DLLs"):
                     validate_runtime_dll_directory(dll_dir)
 
+    def test_package_rejects_extra_release_vc_runtime_dlls(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            dll_dir = Path(temporary) / "runtime-dlls"
+            make_runtime_dll_fixture(dll_dir, ("vcruntime140.dll",))
+            with self.assertRaisesRegex(RuntimeError, "exactly the four application DLLs"):
+                validate_runtime_dll_directory(dll_dir)
+
     def test_package_clones_templates_edits_only_active_copies_and_places_runtime_at_root(self) -> None:
         module_template = (
             b"WorldDatabaseInfo = \"acore;localhost;example;example;3306;\"\n"
@@ -94,6 +102,7 @@ class PackageConfigTemplateTests(unittest.TestCase):
             binary_dir = dist
             config_dir = dist / "configs"
             dll_dir = root / "runtime-dlls"
+            mysql_dir = root / "mysql-portable"
             output = root / "package"
             dist.mkdir(parents=True)
             (config_dir / "modules").mkdir(parents=True)
@@ -103,6 +112,19 @@ class PackageConfigTemplateTests(unittest.TestCase):
             # An unrelated DLL in the install directory must not be swept into the package.
             (binary_dir / "stale-unrelated.dll").write_bytes(b"not a runtime dependency")
             make_runtime_dll_fixture(dll_dir)
+            (mysql_dir / "bin").mkdir(parents=True)
+            (mysql_dir / "lib").mkdir(parents=True)
+            (mysql_dir / "share" / "charsets").mkdir(parents=True)
+            (mysql_dir / "bin" / "mysqld.exe").write_bytes(b"portable MySQL server")
+            (mysql_dir / "bin" / "mysql.exe").write_bytes(b"portable MySQL client")
+            (mysql_dir / "lib" / "libmysql.dll").write_bytes(b"portable MySQL client library")
+            (mysql_dir / "share" / "charsets" / "Index.xml").write_text("<charsets />", encoding="utf-8")
+            (mysql_dir / "bin" / "boost_atomic-vc143-mt-x64.dll").write_bytes(b"must be filtered")
+            (mysql_dir / "bin" / "libprotobuf-debug.dll").write_bytes(b"must be filtered")
+            (mysql_dir / "bin" / "vcruntime140.dll").write_bytes(b"VC runtime is external")
+            (mysql_dir / "bin" / "vcredist_x64.exe").write_bytes(b"installer is not requested")
+            (mysql_dir / ".arena-mysql-version").write_text("8.4.10", encoding="utf-8")
+            (mysql_dir / "README.txt").write_text("No release README", encoding="utf-8")
             (config_dir / "authserver.conf.dist").write_bytes(auth_template)
             (config_dir / "worldserver.conf.dist").write_bytes(world_template)
             (config_dir / "shared" / "extra.conf.dist").write_bytes(nested_template)
@@ -138,6 +160,7 @@ class PackageConfigTemplateTests(unittest.TestCase):
                     "--dist-dir", str(dist),
                     "--binary-dir", str(binary_dir),
                     "--dll-dir", str(dll_dir),
+                    "--mysql-dir", str(mysql_dir),
                     "--config-dir", str(config_dir),
                     "--config-edits", str(edits_path),
                     "--output", str(output),
@@ -161,9 +184,6 @@ class PackageConfigTemplateTests(unittest.TestCase):
                 packaged_active = package.read(
                     "azerothcore-ownedcore-windows/etc/modules/sample.conf"
                 )
-                package_readme = package.read("azerothcore-ownedcore-windows/README.txt").decode("utf-8")
-                source_pins = json.loads(package.read("azerothcore-ownedcore-windows/SOURCE-PINS.json"))
-                runtime_inventory = json.loads(package.read("azerothcore-ownedcore-windows/RUNTIME-DLLS.json"))
                 names = set(package.namelist())
 
             self.assertEqual(auth_dist, auth_template)
@@ -183,14 +203,34 @@ class PackageConfigTemplateTests(unittest.TestCase):
             self.assertIn("azerothcore-ownedcore-windows/worldserver.exe", names)
             for name in RUNTIME_DLLS:
                 self.assertIn(f"azerothcore-ownedcore-windows/{name}", names)
-            self.assertIn("azerothcore-ownedcore-windows/Microsoft.VC143.CRT.manifest", names)
+            root_dlls = {
+                name.rsplit("/", 1)[-1]
+                for name in names
+                if name.startswith("azerothcore-ownedcore-windows/")
+                and name.count("/") == 1
+                and name.casefold().endswith(".dll")
+            }
+            self.assertEqual(root_dlls, set(RUNTIME_DLLS))
+            root_files = {
+                Path(name).name
+                for name in names
+                if name.startswith("azerothcore-ownedcore-windows/") and name.count("/") == 1
+            }
+            self.assertEqual(root_files, {"authserver.exe", "worldserver.exe", *RUNTIME_DLLS})
+            self.assertIn("azerothcore-ownedcore-windows/mysql/bin/mysqld.exe", names)
+            self.assertIn("azerothcore-ownedcore-windows/mysql/bin/mysql.exe", names)
+            self.assertIn("azerothcore-ownedcore-windows/mysql/lib/libmysql.dll", names)
+            self.assertIn("azerothcore-ownedcore-windows/mysql/share/charsets/Index.xml", names)
+            self.assertNotIn("azerothcore-ownedcore-windows/mysql/bin/boost_atomic-vc143-mt-x64.dll", names)
+            self.assertNotIn("azerothcore-ownedcore-windows/mysql/bin/libprotobuf-debug.dll", names)
+            self.assertNotIn("azerothcore-ownedcore-windows/mysql/bin/vcruntime140.dll", names)
+            self.assertNotIn("azerothcore-ownedcore-windows/mysql/bin/vcredist_x64.exe", names)
+            self.assertNotIn("azerothcore-ownedcore-windows/mysql/.arena-mysql-version", names)
+            self.assertFalse(any(Path(name).name.casefold().startswith("readme") for name in names))
+            self.assertNotIn("azerothcore-ownedcore-windows/SOURCE-PINS.json", names)
+            self.assertNotIn("azerothcore-ownedcore-windows/RUNTIME-DLLS.json", names)
+            self.assertFalse(any(name.startswith("azerothcore-ownedcore-windows/bin/") for name in names))
             self.assertNotIn("azerothcore-ownedcore-windows/stale-unrelated.dll", names)
-            self.assertFalse(any("/bin/" in name for name in names))
-            self.assertEqual(runtime_inventory["mysql_client_version"], "8.4.10")
-            self.assertIn("there is no bin/ directory", package_readme)
-            self.assertIn("unchanged", package_readme)
-            self.assertIn("active copies", package_readme)
-            self.assertNotIn("blank", package_readme.lower())
             self.assertIn("without Individual Progression", result.stdout)
             self.assertIn("MySQL 8.4.10", result.stdout)
             self.assertIn(
@@ -207,7 +247,8 @@ class PackageConfigTemplateTests(unittest.TestCase):
             )
             self.assertIn("3 non-fatal warning(s)", result.stdout)
             self.assertNotIn("redact", result.stdout.lower())
-            self.assertFalse(source_pins["build_selection"]["mod-individual-progression"])
+            self.assertIn("portable MySQL", result.stdout)
+            self.assertIn("exactly 4 root DLLs", result.stdout)
 
 
 if __name__ == "__main__":

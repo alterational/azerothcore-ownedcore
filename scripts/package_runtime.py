@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Package Windows executables, selected runtime DLLs, and config copies.
+"""Package the Windows release executables, four root DLLs, portable MySQL, and configs.
 
-The package intentionally excludes game/client data, maps, SQL, database dumps,
-and machine-specific active `.conf` files. Public `.conf.dist` templates are copied
-byte-for-byte; their `.conf` siblings are generated in the package and edited only
-by the reviewed, repository-controlled config map. Failed individual edits warn
-but do not fail packaging. Executables and validated runtime dependencies are
-placed at the package root; configuration files remain under `etc/`.
+The package excludes source-pin metadata, developer README/inventory files,
+game/client data, maps, SQL, database dumps, and machine-specific active `.conf`
+files. Public `.conf.dist` templates are copied byte-for-byte; their `.conf`
+siblings are generated in the package and edited only by the reviewed,
+repository-controlled config map.
 """
 from __future__ import annotations
 
@@ -17,12 +16,11 @@ import shutil
 import sys
 import zipfile
 
-from module_selection import excluded_module_ids, select_modules
+from module_selection import select_modules
 from package_config_edits import DEFAULT_CONFIG_EDITS_PATH, stage_and_edit_configs
-from stage_windows_runtime_dlls import is_debug_dll
+from stage_windows_runtime_dlls import is_debug_dll, is_external_vc_runtime_dll
 
 ROOT = Path(__file__).resolve().parents[1]
-LOCK_PATH = ROOT / "modules.lock.json"
 MANIFEST_PATH = ROOT / "modules.manifest.json"
 
 REQUIRED_BINARIES = ("worldserver.exe", "authserver.exe")
@@ -31,9 +29,6 @@ REQUIRED_RUNTIME_DLLS = {
     "libcrypto-3-x64.dll",
     "libssl-3-x64.dll",
     "legacy.dll",
-    "msvcp140.dll",
-    "vcruntime140.dll",
-    "vcruntime140_1.dll",
 }
 RUNTIME_INVENTORY = "RUNTIME-DLLS.json"
 
@@ -78,29 +73,62 @@ def validate_runtime_dll_directory(dll_dir: Path) -> tuple[list[Path], dict]:
     expected = inventory.get("runtime_dlls")
     if not isinstance(expected, list) or not all(isinstance(name, str) for name in expected):
         raise RuntimeError(f"Invalid runtime_dlls list in {inventory_path}")
-    if {name.casefold() for name in expected} != dll_names:
+    if dll_names != {name.casefold() for name in expected}:
         raise RuntimeError(
             f"Staged DLLs do not match {RUNTIME_INVENTORY}; rerun dependency analysis before packaging"
         )
-    runtime_manifests = sorted(
-        (path for path in dll_dir.iterdir() if path.is_file() and path.suffix.casefold() == ".manifest"),
-        key=lambda path: path.name.casefold(),
-    )
-    expected_manifests = inventory.get("vc_runtime_manifests", [])
-    if not isinstance(expected_manifests, list) or not all(isinstance(name, str) for name in expected_manifests):
-        raise RuntimeError(f"Invalid vc_runtime_manifests list in {inventory_path}")
-    if {name.casefold() for name in expected_manifests} != {path.name.casefold() for path in runtime_manifests}:
-        raise RuntimeError(
-            f"Staged VC++ manifests do not match {RUNTIME_INVENTORY}; rerun dependency analysis before packaging"
-        )
-    return dlls, inventory, runtime_manifests
+    unexpected = dll_names - {name.casefold() for name in REQUIRED_RUNTIME_DLLS}
+    missing = {name.casefold() for name in REQUIRED_RUNTIME_DLLS} - dll_names
+    if unexpected or missing:
+        detail = []
+        if missing:
+            detail.append("missing=" + ",".join(sorted(missing)))
+        if unexpected:
+            detail.append("unexpected=" + ",".join(sorted(unexpected)))
+        raise RuntimeError("Release root must contain exactly the four application DLLs: " + "; ".join(detail))
+    return dlls, inventory
+
+
+def copy_portable_mysql(source: Path, destination: Path) -> int:
+    """Copy the portable MySQL distribution under mysql/, excluding build-only markers and forbidden DLLs."""
+    source = source.resolve()
+    destination = destination.resolve()
+    if not source.is_dir():
+        raise RuntimeError(f"Missing portable MySQL distribution: {source}")
+    required_mysql_files = (source / "bin" / "mysqld.exe", source / "lib" / "libmysql.dll")
+    missing = [str(path.relative_to(source)) for path in required_mysql_files if not path.is_file()]
+    if missing:
+        raise RuntimeError("Portable MySQL distribution is incomplete; missing " + ", ".join(missing))
+    if destination.exists():
+        raise RuntimeError(f"Refusing to overwrite existing MySQL package directory: {destination}")
+
+    def ignore(directory: str, names: list[str]) -> set[str]:
+        ignored: set[str] = set()
+        for name in names:
+            path = Path(directory) / name
+            if (
+                name.casefold() == ".arena-mysql-version"
+                or name.casefold().startswith("readme")
+                or name.casefold().startswith("vcredist")
+            ):
+                ignored.add(name)
+            elif path.is_file() and path.suffix.casefold() == ".dll":
+                if is_debug_dll(name) or is_external_vc_runtime_dll(name) or "boost" in name.casefold():
+                    ignored.add(name)
+            elif path.is_file() and path.suffix.casefold() == ".manifest" and name.casefold().startswith("microsoft.vc"):
+                ignored.add(name)
+        return ignored
+
+    shutil.copytree(source, destination, ignore=ignore)
+    return sum(1 for path in destination.rglob("*") if path.is_file())
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dist-dir", type=Path, default=ROOT / "core" / "env" / "dist", help="installed AzerothCore runtime tree")
     parser.add_argument("--binary-dir", type=Path, help="directory containing installed executables (default: <dist-dir>)")
-    parser.add_argument("--dll-dir", type=Path, help="validated minimal runtime DLL staging directory (default: <dist-dir>/runtime-dlls)")
+    parser.add_argument("--dll-dir", type=Path, help="validated four-DLL staging directory (default: <dist-dir>/runtime-dlls)")
+    parser.add_argument("--mysql-dir", type=Path, required=True, help="portable MySQL distribution root containing bin/ and lib/")
     parser.add_argument("--config-dir", type=Path, help="directory containing installed .conf.dist templates (default: <dist-dir>/etc)")
     parser.add_argument("--output", type=Path, default=ROOT / "runtime-package", help="output package directory")
     parser.add_argument(
@@ -114,14 +142,13 @@ def main() -> int:
         action="append",
         default=[],
         metavar="MODULE_ID",
-        help="include an optional compile_by_default=false source in package pin metadata; may be repeated",
+        help="include an optional compile_by_default=false module in package variant reporting; may be repeated",
     )
     args = parser.parse_args()
 
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     try:
         selected_modules = select_modules(manifest["modules"], args.include_module)
-        excluded_ids = excluded_module_ids(manifest["modules"], args.include_module)
     except ValueError as exc:
         raise RuntimeError(str(exc)) from exc
     selected_ids = [module["id"] for module in selected_modules]
@@ -131,13 +158,14 @@ def main() -> int:
     output = args.output.resolve()
     binary_dir = (args.binary_dir if args.binary_dir is not None else dist).resolve()
     dll_dir = (args.dll_dir if args.dll_dir is not None else dist / "runtime-dlls").resolve()
+    mysql_dir = args.mysql_dir.resolve()
     config_dir = (args.config_dir if args.config_dir is not None else dist / "etc").resolve()
     if not binary_dir.is_dir() or not config_dir.is_dir():
         raise RuntimeError(f"Expected installed binary/config directories at {binary_dir} and {config_dir}")
     missing = sorted(name for name in REQUIRED_BINARIES if not (binary_dir / name).is_file())
     if missing:
         raise RuntimeError("Missing required Windows server binaries: " + ", ".join(missing))
-    runtime_dlls, runtime_inventory, runtime_manifests = validate_runtime_dll_directory(dll_dir)
+    runtime_dlls, runtime_inventory = validate_runtime_dll_directory(dll_dir)
     if output.exists() and any(output.iterdir()):
         raise RuntimeError(f"Refusing to overwrite nonempty package directory: {output}")
     output.mkdir(parents=True, exist_ok=True)
@@ -148,9 +176,7 @@ def main() -> int:
         shutil.copy2(binary_dir / name, package_root / name)
     for source in runtime_dlls:
         shutil.copy2(source, package_root / source.name)
-    for manifest_file in runtime_manifests:
-        shutil.copy2(manifest_file, package_root / manifest_file.name)
-    shutil.copy2(dll_dir / RUNTIME_INVENTORY, package_root / RUNTIME_INVENTORY)
+    mysql_file_count = copy_portable_mysql(mysql_dir, package_root / "mysql")
 
     template_sources = sorted(config_dir.rglob("*.conf.dist"))
     if not template_sources:
@@ -166,34 +192,6 @@ def main() -> int:
         package_root / "etc", args.config_edits.resolve()
     )
 
-    (package_root / "README.txt").write_text(
-        "AzerothCore OwnedCore Windows runtime build.\n"
-        "authserver.exe, worldserver.exe, and the selected runtime DLLs are at the package root (there is no bin/ directory).\n"
-        "RUNTIME-DLLS.json records the dependency-analysis inventory; Boost and debug DLLs are not packaged.\n"
-        "Any Visual C++ runtime manifests supplied with the selected release DLLs are included.\n"
-        "Configuration templates and generated active copies are under etc/; module configs are under etc/modules/.\n"
-        "Public *.conf.dist templates are unchanged. Only edits listed in the build repository's config/package-config-edits.json are applied to generated active copies; installed machine-specific configs are not copied.\n"
-        "Unapplied edits caused by a missing file/key or a value-type mismatch are reported as non-fatal warnings.\n"
-        "Individual Progression source is "
-        + ("included by explicit request.\n" if individual_progression_included else "omitted from the default build.\n")
-        + "Review the supplied configs and set deployment-specific values before first startup.\n"
-        "Client/game data, maps, vmaps, mmaps, SQL dumps, and machine-specific active server configs are not included.\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-    lock = json.loads(LOCK_PATH.read_text(encoding="utf-8"))
-    build_pins = {
-        "core": lock["core"],
-        "modules": {module_id: lock["modules"][module_id] for module_id in selected_ids},
-        "excluded_modules": excluded_ids,
-        "build_selection": {"mod-individual-progression": individual_progression_included},
-    }
-    (package_root / "SOURCE-PINS.json").write_text(
-        json.dumps(build_pins, indent=2) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-
     archive = output / "azerothcore-ownedcore-windows.zip"
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as bundle:
         for source in sorted(package_root.rglob("*")):
@@ -202,10 +200,11 @@ def main() -> int:
 
     variant = "with Individual Progression" if individual_progression_included else "without Individual Progression"
     print(
-        f"Packaged {len(REQUIRED_BINARIES)} server executables, {len(runtime_dlls)} selected runtime DLLs, "
-        f"{copied_configs} unchanged .conf.dist templates, and {active_configs} active .conf copies; "
-        f"applied {applied_edits} config edits with {config_warnings} non-fatal warning(s) "
-        f"({variant}; MySQL {runtime_inventory.get('mysql_client_version', 'unknown')}). Archive: {archive}"
+        f"Packaged {len(REQUIRED_BINARIES)} server executables, exactly {len(runtime_dlls)} root DLLs, "
+        f"portable MySQL ({mysql_file_count} files), {copied_configs} unchanged .conf.dist templates, "
+        f"and {active_configs} active .conf copies; applied {applied_edits} config edits with "
+        f"{config_warnings} non-fatal warning(s) ({variant}; MySQL "
+        f"{runtime_inventory.get('mysql_client_version', 'unknown')}). Archive: {archive}"
     )
     return 0
 

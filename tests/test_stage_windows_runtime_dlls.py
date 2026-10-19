@@ -31,7 +31,7 @@ Summary
             ["KERNEL32.dll", "libmysql.dll", "MSVCP140.dll"],
         )
 
-    def test_stages_recursive_mysql_openssl_and_vc_runtime_import_closure(self) -> None:
+    def test_stages_four_mysql_openssl_dlls_and_leaves_vc_runtime_external(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             binary_dir = root / "installed"
@@ -39,10 +39,9 @@ Summary
             mysql_bin = root / "mysql" / "bin"
             openssl_bin = root / "openssl" / "bin"
             openssl_modules = root / "openssl" / "lib" / "ossl-modules"
-            vc_redist = root / "vc" / "x64" / "Microsoft.VC143.CRT"
             system_dir = root / "windows" / "System32"
             output_dir = root / "staged"
-            for directory in (binary_dir, mysql_lib, mysql_bin, openssl_bin, openssl_modules, vc_redist, system_dir):
+            for directory in (binary_dir, mysql_lib, mysql_bin, openssl_bin, openssl_modules, system_dir):
                 directory.mkdir(parents=True)
             for binary in ("authserver.exe", "worldserver.exe"):
                 (binary_dir / binary).write_bytes(binary.encode())
@@ -57,18 +56,12 @@ Summary
             (openssl_bin / "libssl-3-x64.dll").write_bytes(b"openssl ssl")
             (openssl_bin / "libcrypto-3-x64.dll").write_bytes(b"openssl crypto")
             (openssl_modules / "legacy.dll").write_bytes(b"openssl legacy provider")
-            for name in ("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll"):
-                (vc_redist / name).write_bytes(name.encode())
-            (vc_redist / "MSVCP140D.dll").write_bytes(b"debug CRT")
-            (vc_redist / "Microsoft.VC143.CRT.manifest").write_text("<assembly />\n", encoding="utf-8")
             (system_dir / "KERNEL32.dll").write_bytes(b"Windows system library")
 
             imports = {
                 "authserver.exe": ["KERNEL32.dll", "libmysql.dll", "libcrypto-3-x64.dll", "MSVCP140.dll"],
                 "worldserver.exe": ["KERNEL32.dll", "libssl-3-x64.dll", "VCRUNTIME140_1.dll"],
-                "libmysql.dll": ["libssl-3-x64.dll", "libcrypto-3-x64.dll", "libprotobuf.dll"],
-                "libprotobuf.dll": ["libabsl.dll", "KERNEL32.dll"],
-                "libabsl.dll": ["KERNEL32.dll"],
+                "libmysql.dll": ["libssl-3-x64.dll", "libcrypto-3-x64.dll"],
                 "libssl-3-x64.dll": ["libcrypto-3-x64.dll"],
                 "libcrypto-3-x64.dll": ["KERNEL32.dll"],
                 "legacy.dll": ["libcrypto-3-x64.dll"],
@@ -83,7 +76,6 @@ Summary
                 mysql_bin_dir=mysql_bin,
                 openssl_bin_dir=openssl_bin,
                 openssl_module_dir=openssl_modules,
-                vc_redist_dir=vc_redist,
                 output_dir=output_dir,
                 system_dir=system_dir,
                 mysql_version="8.4.10",
@@ -97,22 +89,56 @@ Summary
                 "libssl-3-x64.dll",
                 "libcrypto-3-x64.dll",
                 "legacy.dll",
-                "libprotobuf.dll",
-                "libabsl.dll",
-                "msvcp140.dll",
-                "vcruntime140.dll",
-                "vcruntime140_1.dll",
             ):
                 self.assertIn(expected, staged_names)
-            self.assertFalse(any("boost" in name for name in staged_names))
-            self.assertFalse(any("debug" in name or name.endswith("140d.dll") for name in staged_names))
-            self.assertTrue((output_dir / "Microsoft.VC143.CRT.manifest").is_file())
+            self.assertEqual(staged_names, {"libmysql.dll", "libssl-3-x64.dll", "libcrypto-3-x64.dll", "legacy.dll"})
             self.assertTrue((output_dir / "RUNTIME-DLLS.json").is_file())
+            self.assertFalse(any(path.suffix.casefold() == ".manifest" for path in output_dir.iterdir()))
             self.assertEqual(report["mysql_client_version"], "8.4.10")
             self.assertIn("legacy.dll", report["dynamic_dependencies"])
-            self.assertEqual(report["vc_runtime_manifests"], ["Microsoft.VC143.CRT.manifest"])
+            self.assertEqual(
+                {name.casefold() for name in report["external_vc_runtime_imports"]},
+                {"msvcp140.dll", "vcruntime140_1.dll"},
+            )
             self.assertEqual(json.loads((output_dir / "RUNTIME-DLLS.json").read_text())["runtime_dlls"], report["runtime_dlls"])
             self.assertIn("KERNEL32.dll", report["system_imports_not_packaged"])
+
+    def test_fails_closed_for_extra_private_dependency_even_when_found_in_mysql_bin(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            binary_dir = root / "installed"
+            mysql_lib = root / "mysql" / "lib"
+            mysql_bin = root / "mysql" / "bin"
+            openssl_bin = root / "openssl" / "bin"
+            system_dir = root / "System32"
+            output_dir = root / "staged"
+            for directory in (binary_dir, mysql_lib, mysql_bin, openssl_bin, system_dir):
+                directory.mkdir(parents=True)
+            for name in ("authserver.exe", "worldserver.exe"):
+                (binary_dir / name).write_bytes(b"exe")
+            (mysql_lib / "libmysql.dll").write_bytes(b"mysql lib directory")
+            (mysql_bin / "unlisted-mysql-runtime.dll").write_bytes(b"present but not allowed in root")
+            (openssl_bin / "libssl-3-x64.dll").write_bytes(b"ssl")
+            (openssl_bin / "libcrypto-3-x64.dll").write_bytes(b"crypto")
+            (openssl_bin / "legacy.dll").write_bytes(b"legacy")
+
+            def dependencies(path: Path) -> list[str]:
+                if path.name == "authserver.exe":
+                    return ["unlisted-mysql-runtime.dll"]
+                return []
+
+            with self.assertRaisesRegex(RuntimeError, "would exceed the four-DLL release layout"):
+                stage_runtime_dependencies(
+                    binary_dir=binary_dir,
+                    mysql_lib_dir=mysql_lib,
+                    mysql_bin_dir=mysql_bin,
+                    openssl_bin_dir=openssl_bin,
+                    openssl_module_dir=None,
+                    output_dir=output_dir,
+                    system_dir=system_dir,
+                    mysql_version="8.4.10",
+                    dependency_reader=dependencies,
+                )
 
     def test_fails_closed_for_unresolved_non_system_dependency(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -121,10 +147,9 @@ Summary
             mysql_lib = root / "mysql" / "lib"
             mysql_bin = root / "mysql" / "bin"
             openssl_bin = root / "openssl" / "bin"
-            vc_redist = root / "vc"
             system_dir = root / "System32"
             output_dir = root / "staged"
-            for directory in (binary_dir, mysql_lib, mysql_bin, openssl_bin, vc_redist, system_dir):
+            for directory in (binary_dir, mysql_lib, mysql_bin, openssl_bin, system_dir):
                 directory.mkdir(parents=True)
             for name in ("authserver.exe", "worldserver.exe"):
                 (binary_dir / name).write_bytes(b"exe")
@@ -133,10 +158,6 @@ Summary
             for name in ("libssl-3-x64.dll", "libcrypto-3-x64.dll"):
                 (openssl_bin / name).write_bytes(b"openssl")
             (openssl_bin / "legacy.dll").write_bytes(b"legacy")
-            for name in ("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll"):
-                (vc_redist / name).write_bytes(b"runtime")
-            (vc_redist / "Microsoft.VC143.CRT.manifest").write_text("<assembly />", encoding="utf-8")
-
             def dependencies(path: Path) -> list[str]:
                 if path.name == "authserver.exe":
                     return ["missing-private-runtime.dll"]
@@ -149,7 +170,6 @@ Summary
                     mysql_bin_dir=mysql_bin,
                     openssl_bin_dir=openssl_bin,
                     openssl_module_dir=None,
-                    vc_redist_dir=vc_redist,
                     output_dir=output_dir,
                     system_dir=system_dir,
                     mysql_version="8.4.10",
