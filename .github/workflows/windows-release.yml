@@ -85,7 +85,7 @@ jobs:
           path: |
             C:\local\boost_1_87_0
             C:\tools\mysql\current
-          key: winbuild-deps-boost-1.87.0-mysql-8.4.10
+          key: winbuild-deps-boost-1.87.0-mysql-8.0.46
           restore-keys: |
             winbuild-deps-boost-1.87.0-mysql-
 
@@ -132,7 +132,7 @@ jobs:
           if (-not (Test-Path 'C:\local\boost_1_87_0\lib64-msvc-14.3')) { throw 'Boost MSVC 14.3 libraries are missing.' }
           Write-Host 'Boost dependency is ready.'
 
-          $mysqlVersion = '8.4.10'
+          $mysqlVersion = '8.0.46'
           $mysqlRoot = 'C:\tools\mysql\current'
           $mysqlVersionMarker = Join-Path $mysqlRoot '.arena-mysql-version'
           $cachedMysqlVersion = if (Test-Path $mysqlVersionMarker) { (Get-Content -Raw $mysqlVersionMarker).Trim() } else { '' }
@@ -141,7 +141,7 @@ jobs:
               -not (Test-Path (Join-Path $mysqlRoot 'lib\libmysql.dll')) -or
               -not (Test-Path (Join-Path $mysqlRoot 'bin\\mysqld.exe'))) {
             $mysqlZip = Join-Path $env:RUNNER_TEMP "mysql-$mysqlVersion-winx64.zip"
-            $mysqlUrl = "https://cdn.mysql.com/archives/mysql-8.4/mysql-$mysqlVersion-winx64.zip"
+            $mysqlUrl = "https://cdn.mysql.com/archives/mysql-8.0/mysql-$mysqlVersion-winx64.zip"
             Invoke-WebRequest -Uri $mysqlUrl -OutFile $mysqlZip -UserAgent 'Mozilla/5.0'
             $sizeMB = (Get-Item $mysqlZip).Length / 1MB
             if ($sizeMB -lt 50) { throw "MySQL archive download is only $([int]$sizeMB) MB." }
@@ -192,7 +192,7 @@ jobs:
           @'
           CCOMPILERC="cl"
           CCOMPILERCXX="cl"
-          CTYPE="Release"
+          CTYPE="RelWithDebInfo"
           CSCRIPTS="static"
           CMODULES="static"
           CTOOLS_BUILD="none"
@@ -286,7 +286,7 @@ jobs:
             '--mysql-bin-dir', 'C:\tools\mysql\current\bin',
             '--openssl-bin-dir', 'C:\openssl\bin',
             '--output-dir', 'core/env/runtime-dlls',
-            '--mysql-version', '8.4.10'
+            '--mysql-version', '8.0.46'
           )
           $opensslModuleDir = @('C:\openssl\lib\ossl-modules', 'C:\openssl\ossl-modules') |
             Where-Object { Test-Path (Join-Path $_ 'legacy.dll') } |

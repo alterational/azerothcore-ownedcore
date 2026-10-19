@@ -30,7 +30,7 @@ def make_runtime_dll_fixture(directory: Path, extra_dlls: tuple[str, ...] = ()) 
     (directory / "RUNTIME-DLLS.json").write_text(
         json.dumps({
             "schema_version": 1,
-            "mysql_client_version": "8.4.10",
+            "mysql_client_version": "8.0.46",
             "runtime_dlls": names,
             "external_vc_runtime_imports": ["MSVCP140.dll", "VCRUNTIME140.dll"],
         }, indent=2) + "\n",
@@ -123,7 +123,7 @@ class PackageConfigTemplateTests(unittest.TestCase):
             (mysql_dir / "bin" / "libprotobuf-debug.dll").write_bytes(b"must be filtered")
             (mysql_dir / "bin" / "vcruntime140.dll").write_bytes(b"VC runtime is external")
             (mysql_dir / "bin" / "vcredist_x64.exe").write_bytes(b"installer is not requested")
-            (mysql_dir / ".arena-mysql-version").write_text("8.4.10", encoding="utf-8")
+            (mysql_dir / ".arena-mysql-version").write_text("8.0.46", encoding="utf-8")
             (mysql_dir / "README.txt").write_text("No release README", encoding="utf-8")
             (config_dir / "authserver.conf.dist").write_bytes(auth_template)
             (config_dir / "worldserver.conf.dist").write_bytes(world_template)
@@ -232,7 +232,7 @@ class PackageConfigTemplateTests(unittest.TestCase):
             self.assertFalse(any(name.startswith("azerothcore-ownedcore-windows/bin/") for name in names))
             self.assertNotIn("azerothcore-ownedcore-windows/stale-unrelated.dll", names)
             self.assertIn("without Individual Progression", result.stdout)
-            self.assertIn("MySQL 8.4.10", result.stdout)
+            self.assertIn("MySQL 8.0.46", result.stdout)
             self.assertIn(
                 "WARNING: couldn't apply config edit for: modules/sample.conf, key Demo.Flag true 1",
                 result.stdout,

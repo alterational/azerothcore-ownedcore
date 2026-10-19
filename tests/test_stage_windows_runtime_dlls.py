@@ -78,7 +78,7 @@ Summary
                 openssl_module_dir=openssl_modules,
                 output_dir=output_dir,
                 system_dir=system_dir,
-                mysql_version="8.4.10",
+                mysql_version="8.0.46",
                 dependency_reader=lambda path: imports.get(path.name.casefold(), []),
             )
 
@@ -94,7 +94,7 @@ Summary
             self.assertEqual(staged_names, {"libmysql.dll", "libssl-3-x64.dll", "libcrypto-3-x64.dll", "legacy.dll"})
             self.assertTrue((output_dir / "RUNTIME-DLLS.json").is_file())
             self.assertFalse(any(path.suffix.casefold() == ".manifest" for path in output_dir.iterdir()))
-            self.assertEqual(report["mysql_client_version"], "8.4.10")
+            self.assertEqual(report["mysql_client_version"], "8.0.46")
             self.assertIn("legacy.dll", report["dynamic_dependencies"])
             self.assertEqual(
                 {name.casefold() for name in report["external_vc_runtime_imports"]},
@@ -136,7 +136,7 @@ Summary
                     openssl_module_dir=None,
                     output_dir=output_dir,
                     system_dir=system_dir,
-                    mysql_version="8.4.10",
+                    mysql_version="8.0.46",
                     dependency_reader=dependencies,
                 )
 
@@ -172,7 +172,7 @@ Summary
                     openssl_module_dir=None,
                     output_dir=output_dir,
                     system_dir=system_dir,
-                    mysql_version="8.4.10",
+                    mysql_version="8.0.46",
                     dependency_reader=dependencies,
                 )
 

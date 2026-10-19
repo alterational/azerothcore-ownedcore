@@ -244,13 +244,13 @@ def stage_runtime_dependencies(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary-dir", type=Path, required=True, help="installed directory containing authserver.exe and worldserver.exe")
-    parser.add_argument("--mysql-lib-dir", type=Path, required=True, help="MySQL 8.4.x lib directory containing libmysql.dll")
-    parser.add_argument("--mysql-bin-dir", type=Path, required=True, help="MySQL 8.4.x bin directory with transitive client dependencies")
+    parser.add_argument("--mysql-lib-dir", type=Path, required=True, help="MySQL 8.0.x lib directory containing libmysql.dll")
+    parser.add_argument("--mysql-bin-dir", type=Path, required=True, help="MySQL 8.0.x bin directory with transitive client dependencies")
     parser.add_argument("--openssl-bin-dir", type=Path, required=True, help="selected OpenSSL bin directory")
     parser.add_argument("--openssl-module-dir", type=Path, help="optional OpenSSL provider module directory")
     parser.add_argument("--system-dir", type=Path, help="Windows System32 directory (defaults to %WINDIR%/System32)")
     parser.add_argument("--output-dir", type=Path, required=True, help="empty staging directory for the minimal DLL closure")
-    parser.add_argument("--mysql-version", default="8.4.10", help="MySQL client version recorded in the inventory")
+    parser.add_argument("--mysql-version", default="8.0.46", help="MySQL client version recorded in the inventory")
     parser.add_argument("--dumpbin", default="dumpbin", help="Visual Studio dumpbin executable")
     args = parser.parse_args()
 
