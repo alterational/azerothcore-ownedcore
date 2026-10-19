@@ -110,6 +110,7 @@ Summary
             self.assertTrue((output_dir / "RUNTIME-DLLS.json").is_file())
             self.assertEqual(report["mysql_client_version"], "8.4.10")
             self.assertIn("legacy.dll", report["dynamic_dependencies"])
+            self.assertEqual(report["vc_runtime_manifests"], ["Microsoft.VC143.CRT.manifest"])
             self.assertEqual(json.loads((output_dir / "RUNTIME-DLLS.json").read_text())["runtime_dlls"], report["runtime_dlls"])
             self.assertIn("KERNEL32.dll", report["system_imports_not_packaged"])
 

@@ -27,7 +27,6 @@ REQUIRED_RUNTIME_DLLS = (
     "libssl-3-x64.dll",
     "legacy.dll",
 )
-VC_RUNTIME_MANIFEST = "Microsoft.VC143.CRT.manifest"
 DEPENDENCY_RE = re.compile(r"^\s*([A-Za-z0-9_.+-]+\.dll)\s*$", re.IGNORECASE)
 SYSTEM_API_PREFIXES = ("api-ms-win-", "ext-ms-win-")
 DEBUG_DLL_RE = re.compile(
@@ -122,8 +121,9 @@ def stage_runtime_dependencies(
     """Copy a minimal release DLL set and return the staged inventory.
 
     The import walk is recursive and fails closed when a non-Windows dependency
-    cannot be resolved. The complete x64 release VC143 CRT app-local directory
-    is included (with its manifest); only PE dependencies from the remaining
+    cannot be resolved. All release DLLs from the selected x64 VC++ CRT app-local
+    directory are included; any redistributable manifest present there is copied.
+    Only PE dependencies from the remaining
     candidate directories are copied. `legacy.dll` is an explicit dynamic-load
     dependency and is therefore seeded into the walk even though dumpbin cannot
     discover it from the executable imports.
@@ -165,10 +165,12 @@ def stage_runtime_dependencies(
     for source in crt_dlls:
         _copy_runtime_file(source, source, output_dir)
 
-    crt_manifest = vc_redist_dir / VC_RUNTIME_MANIFEST
-    if not crt_manifest.is_file():
-        raise RuntimeError(f"VC++ app-local manifest is missing: {crt_manifest}")
-    shutil.copy2(crt_manifest, output_dir / crt_manifest.name)
+    crt_manifests = [
+        path for path in sorted(vc_redist_dir.iterdir())
+        if path.is_file() and path.suffix.casefold() == ".manifest"
+    ]
+    for manifest in crt_manifests:
+        shutil.copy2(manifest, output_dir / manifest.name)
 
     search_dirs = [
         output_dir,
@@ -239,7 +241,7 @@ def stage_runtime_dependencies(
         "server_binaries": list(SERVER_BINARIES),
         "dynamic_dependencies": ["legacy.dll"],
         "runtime_dlls": dll_names,
-        "vc_runtime_manifest": VC_RUNTIME_MANIFEST,
+        "vc_runtime_manifests": [path.name for path in crt_manifests],
         "system_imports_not_packaged": sorted(system_imports, key=str.casefold),
     }
     (output_dir / "RUNTIME-DLLS.json").write_text(
@@ -255,7 +257,7 @@ def main() -> int:
     parser.add_argument("--mysql-bin-dir", type=Path, required=True, help="MySQL 8.4.x bin directory with transitive client dependencies")
     parser.add_argument("--openssl-bin-dir", type=Path, required=True, help="selected OpenSSL bin directory")
     parser.add_argument("--openssl-module-dir", type=Path, help="optional OpenSSL provider module directory")
-    parser.add_argument("--vc-redist-dir", type=Path, required=True, help="x64 Microsoft.VC143.CRT app-local redist directory")
+    parser.add_argument("--vc-redist-dir", type=Path, required=True, help="x64 release VC++ CRT app-local redist directory containing the runtime DLLs")
     parser.add_argument("--system-dir", type=Path, help="Windows System32 directory (defaults to %WINDIR%/System32)")
     parser.add_argument("--output-dir", type=Path, required=True, help="empty staging directory for the minimal DLL closure")
     parser.add_argument("--mysql-version", default="8.4.10", help="MySQL client version recorded in the inventory")

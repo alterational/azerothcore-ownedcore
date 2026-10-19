@@ -32,7 +32,7 @@ def make_runtime_dll_fixture(directory: Path, extra_dlls: tuple[str, ...] = ()) 
         (directory / name).write_bytes(("fixture: " + name).encode())
     (directory / "Microsoft.VC143.CRT.manifest").write_text("<assembly />\n", encoding="utf-8")
     (directory / "RUNTIME-DLLS.json").write_text(
-        json.dumps({"schema_version": 1, "mysql_client_version": "8.4.10", "runtime_dlls": names}, indent=2) + "\n",
+        json.dumps({"schema_version": 1, "mysql_client_version": "8.4.10", "runtime_dlls": names, "vc_runtime_manifests": ["Microsoft.VC143.CRT.manifest"]}, indent=2) + "\n",
         encoding="utf-8",
     )
 

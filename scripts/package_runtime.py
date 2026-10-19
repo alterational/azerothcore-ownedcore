@@ -36,7 +36,6 @@ REQUIRED_RUNTIME_DLLS = {
     "vcruntime140_1.dll",
 }
 RUNTIME_INVENTORY = "RUNTIME-DLLS.json"
-VC_RUNTIME_MANIFEST = "Microsoft.VC143.CRT.manifest"
 
 
 def copy_config_template(source: Path, destination: Path) -> None:
@@ -83,10 +82,18 @@ def validate_runtime_dll_directory(dll_dir: Path) -> tuple[list[Path], dict]:
         raise RuntimeError(
             f"Staged DLLs do not match {RUNTIME_INVENTORY}; rerun dependency analysis before packaging"
         )
-    manifest = dll_dir / VC_RUNTIME_MANIFEST
-    if not manifest.is_file():
-        raise RuntimeError(f"Missing app-local Visual C++ runtime manifest: {manifest}")
-    return dlls, inventory
+    runtime_manifests = sorted(
+        (path for path in dll_dir.iterdir() if path.is_file() and path.suffix.casefold() == ".manifest"),
+        key=lambda path: path.name.casefold(),
+    )
+    expected_manifests = inventory.get("vc_runtime_manifests", [])
+    if not isinstance(expected_manifests, list) or not all(isinstance(name, str) for name in expected_manifests):
+        raise RuntimeError(f"Invalid vc_runtime_manifests list in {inventory_path}")
+    if {name.casefold() for name in expected_manifests} != {path.name.casefold() for path in runtime_manifests}:
+        raise RuntimeError(
+            f"Staged VC++ manifests do not match {RUNTIME_INVENTORY}; rerun dependency analysis before packaging"
+        )
+    return dlls, inventory, runtime_manifests
 
 
 def main() -> int:
@@ -130,7 +137,7 @@ def main() -> int:
     missing = sorted(name for name in REQUIRED_BINARIES if not (binary_dir / name).is_file())
     if missing:
         raise RuntimeError("Missing required Windows server binaries: " + ", ".join(missing))
-    runtime_dlls, runtime_inventory = validate_runtime_dll_directory(dll_dir)
+    runtime_dlls, runtime_inventory, runtime_manifests = validate_runtime_dll_directory(dll_dir)
     if output.exists() and any(output.iterdir()):
         raise RuntimeError(f"Refusing to overwrite nonempty package directory: {output}")
     output.mkdir(parents=True, exist_ok=True)
@@ -141,7 +148,8 @@ def main() -> int:
         shutil.copy2(binary_dir / name, package_root / name)
     for source in runtime_dlls:
         shutil.copy2(source, package_root / source.name)
-    shutil.copy2(dll_dir / VC_RUNTIME_MANIFEST, package_root / VC_RUNTIME_MANIFEST)
+    for manifest_file in runtime_manifests:
+        shutil.copy2(manifest_file, package_root / manifest_file.name)
     shutil.copy2(dll_dir / RUNTIME_INVENTORY, package_root / RUNTIME_INVENTORY)
 
     template_sources = sorted(config_dir.rglob("*.conf.dist"))
@@ -162,6 +170,7 @@ def main() -> int:
         "AzerothCore OwnedCore Windows runtime build.\n"
         "authserver.exe, worldserver.exe, and the selected runtime DLLs are at the package root (there is no bin/ directory).\n"
         "RUNTIME-DLLS.json records the dependency-analysis inventory; Boost and debug DLLs are not packaged.\n"
+        "Any Visual C++ runtime manifests supplied with the selected release DLLs are included.\n"
         "Configuration templates and generated active copies are under etc/; module configs are under etc/modules/.\n"
         "Public *.conf.dist templates are unchanged. Only edits listed in the build repository's config/package-config-edits.json are applied to generated active copies; installed machine-specific configs are not copied.\n"
         "Unapplied edits caused by a missing file/key or a value-type mismatch are reported as non-fatal warnings.\n"
