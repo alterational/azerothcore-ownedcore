@@ -281,9 +281,25 @@ jobs:
         shell: pwsh
         run: |
           $vcRedistDir = $null
+          $vcInstallDir = $null
+          $vcSearchRoots = @()
           if ($env:VCToolsRedistDir) {
-            $candidate = Join-Path $env:VCToolsRedistDir 'x64\Microsoft.VC143.CRT'
-            if (Test-Path $candidate) { $vcRedistDir = $candidate }
+            $redistRoot = $env:VCToolsRedistDir.TrimEnd('\')
+            $vcSearchRoots += $redistRoot
+            $candidate = Join-Path $redistRoot 'x64\Microsoft.VC143.CRT'
+            if (Test-Path (Join-Path $candidate 'Microsoft.VC143.CRT.manifest')) { $vcRedistDir = $candidate }
+          }
+          if (-not $vcRedistDir -and $env:VCToolsInstallDir) {
+            $toolsetPath = $env:VCToolsInstallDir.TrimEnd('\')
+            $vcToolsPath = Split-Path (Split-Path (Split-Path $toolsetPath -Parent) -Parent) -Parent
+            $vcInstallDir = $vcToolsPath
+            $redistRoot = Join-Path $vcInstallDir 'Redist\MSVC'
+            $vcSearchRoots += $redistRoot
+            $redistPattern = Join-Path $redistRoot '*\x64\Microsoft.VC143.CRT'
+            $candidate = Get-ChildItem -Path $redistPattern -Directory -ErrorAction SilentlyContinue |
+              Sort-Object -Property FullName -Descending |
+              Select-Object -First 1
+            if ($candidate -and (Test-Path (Join-Path $candidate.FullName 'Microsoft.VC143.CRT.manifest'))) { $vcRedistDir = $candidate.FullName }
           }
           if (-not $vcRedistDir) {
             $programFilesRoots = @(
@@ -291,17 +307,37 @@ jobs:
               [Environment]::GetFolderPath('ProgramFiles')
             ) | Where-Object { $_ } | Select-Object -Unique
             foreach ($programFilesRoot in $programFilesRoots) {
-              $redistPattern = Join-Path $programFilesRoot 'Microsoft Visual Studio\2022\*\VC\Redist\MSVC\*\x64\Microsoft.VC143.CRT'
+              $vsRoot = Join-Path $programFilesRoot 'Microsoft Visual Studio\2022'
+              $vcSearchRoots += $vsRoot
+              $redistPattern = Join-Path $vsRoot '*\VC\Redist\MSVC\*\x64\Microsoft.VC143.CRT'
               $candidate = Get-ChildItem -Path $redistPattern -Directory -ErrorAction SilentlyContinue |
                 Sort-Object -Property FullName -Descending |
                 Select-Object -First 1
-              if ($candidate) {
+              if ($candidate -and (Test-Path (Join-Path $candidate.FullName 'Microsoft.VC143.CRT.manifest'))) {
                 $vcRedistDir = $candidate.FullName
                 break
               }
             }
           }
-          if (-not $vcRedistDir) { throw 'Could not locate the x64 Microsoft.VC143.CRT redistributable directory.' }
+          if (-not $vcRedistDir) {
+            foreach ($searchRoot in ($vcSearchRoots | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique)) {
+              $manifestFile = Get-ChildItem -LiteralPath $searchRoot -Filter 'Microsoft.VC143.CRT.manifest' -File -Recurse -ErrorAction SilentlyContinue |
+                Where-Object { $_.Directory.Parent.Name -eq 'x64' } |
+                Select-Object -First 1
+              if ($manifestFile) {
+                $vcRedistDir = $manifestFile.Directory.FullName
+                break
+              }
+            }
+          }
+          if (-not $vcRedistDir) {
+            $searchInfo = "VCToolsRedistDir='$env:VCToolsRedistDir'; VCToolsInstallDir='$env:VCToolsInstallDir'; searched='$($vcSearchRoots -join ';')'"
+            $message = "Could not locate the x64 Microsoft.VC143.CRT redistributable directory. $searchInfo"
+            Write-Output "::error title=Windows VC++ runtime lookup::$message"
+            $message | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw $message
+          }
+          Write-Host "Using x64 VC143 runtime files from $vcRedistDir."
 
           $stageArgs = @(
             '--binary-dir', 'core/env/dist',
