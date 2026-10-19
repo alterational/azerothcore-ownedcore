@@ -316,8 +316,17 @@ jobs:
             Where-Object { Test-Path (Join-Path $_ 'legacy.dll') } |
             Select-Object -First 1
           if ($opensslModuleDir) { $stageArgs += @('--openssl-module-dir', $opensslModuleDir) }
-          python scripts/stage_windows_runtime_dlls.py @stageArgs
-          if ($LASTEXITCODE -ne 0) { throw "Runtime dependency analysis/staging failed with exit code $LASTEXITCODE." }
+          $stageOutput = & python scripts/stage_windows_runtime_dlls.py @stageArgs 2>&1
+          $stageExitCode = $LASTEXITCODE
+          $stageOutput | ForEach-Object { Write-Host $_ }
+          if ($stageExitCode -ne 0) {
+            $detail = (($stageOutput | Select-Object -Last 20) -join ' | ') -replace '[\r\n]+', ' '
+            $detail = $detail.Replace('%', '%25')
+            $message = "Windows runtime DLL staging failed (exit $stageExitCode): $detail"
+            Write-Output "::error title=Windows runtime DLL staging::$message"
+            $message | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw $message
+          }
 
       - name: Apply and verify installed runtime config
         shell: pwsh
@@ -344,7 +353,17 @@ jobs:
           if ($env:INCLUDE_INDIVIDUAL_PROGRESSION -eq 'true') {
             $packageArgs += @('--include-module', 'mod-individual-progression')
           }
-          python scripts/package_runtime.py @packageArgs
+          $packageOutput = & python scripts/package_runtime.py @packageArgs 2>&1
+          $packageExitCode = $LASTEXITCODE
+          $packageOutput | ForEach-Object { Write-Host $_ }
+          if ($packageExitCode -ne 0) {
+            $detail = (($packageOutput | Select-Object -Last 20) -join ' | ') -replace '[\r\n]+', ' '
+            $detail = $detail.Replace('%', '%25')
+            $message = "Windows runtime packaging failed (exit $packageExitCode): $detail"
+            Write-Output "::error title=Windows runtime packaging::$message"
+            $message | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw $message
+          }
 
       - name: Upload successful Windows runtime artifact
         if: steps.core-readiness.outputs.ready == 'true'
