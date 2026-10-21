@@ -53,9 +53,6 @@ def copy_config_template(source: Path, destination: Path) -> None:
         raise RuntimeError(f"Cannot copy config template {source} to {destination}: {exc}") from exc
 
 
-def _normalise_name(name: str) -> str:
-    return name.replace("\\", "/").strip("/")
-
 
 def _casefold_set(names: Iterable[str]) -> set[str]:
     return {name.casefold() for name in names}

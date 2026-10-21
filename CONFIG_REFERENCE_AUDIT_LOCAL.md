@@ -1,5 +1,7 @@
 # OwnedCore config comparison
 
+> **Superseded — historical record.** This audit examined a build artifact produced before the Boost 1.92.0 / MySQL 8.4.11 rebuild. That artifact used the retired `bin/` + `etc/` layout, shipped a `README.txt`, a `SOURCE-PINS.json`, and no active `.conf` files; none of that describes the current package, which has a flat root, exactly four DLLs, `configs/` with active `.conf` copies, and a portable `mysql/` tree. The comparison findings below are unchanged history and were used to build the tracked package edit map. For the current layout and verification state see [CHECKOUT_REPORT.md](CHECKOUT_REPORT.md).
+
 **Result:** compared the downloaded post-squash build artifact with the repack configs in the `main`-branch ZIP. This audit itself made no project config, source, workflow, or mapping changes; its findings were later used to implement the tracked package-config map and packaging code. The build/reference ZIP files are comparison inputs and are not included in Git.
 
 ## Inputs and method
