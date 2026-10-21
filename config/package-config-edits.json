@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "Edits applied only to active .conf copies in the Windows runtime package. The source .conf.dist files remain byte-for-byte unchanged. Paths are relative to the package etc/ directory.",
+  "description": "Edits applied only to active .conf copies in the Windows runtime package. The source .conf.dist files remain byte-for-byte unchanged. Paths are relative to the package configs/ directory.",
   "configs": {
     "authserver.conf": [],
     "worldserver.conf": [],

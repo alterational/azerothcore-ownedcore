@@ -1,9 +1,11 @@
 # Agent handoff
 
-- **Updated:** 2026-10-19
+- **Updated:** 2026-10-20
 - **Repository:** `alterational/azerothcore-ownedcore`
-- **Session branch for the target handoff:** `arena/01a106ef-azerothcore-ownedcore`
-- **PR:** #1 is open and must not be merged or closed without the user's instruction.
+- **Integration/base branch:** `rebuild-897a41c`, clean base commit `897a41cf13191bd954c5731bfc3128bf966cdbf2`
+- **Session working branch:** `arena/06c5561d-azerothcore-ownedcore`, created from `rebuild-897a41c`
+- **Pull-request target:** `rebuild-897a41c`
+- **Historical/backup only:** `arena/01a106ef-azerothcore-ownedcore` and PR #1. They are not the active session branch or pull request and must not be merged, closed, or reused in this task.
 
 ## Original purpose and OwnedCore reference baseline
 
@@ -34,7 +36,7 @@ The core pin is `alterational/azerothcore-wotlk.git`, branch `Playerbot`, commit
 
 ## User requirements
 
-- Work only on `arena/01a106ef-azerothcore-ownedcore`. Never push to `main`, create another branch, or merge/close PR #1. Do not commit or push unless the user asks.
+- Work only on the session working branch created from `rebuild-897a41c`. Never push to `rebuild-897a41c`, `main`, or `arena/01a106ef-azerothcore-ownedcore`, never create or rename another branch, and never merge or close PR #1 or the session pull request without separate approval. Do not commit or push unless the user asks.
 - Preserve the core pin and all other module pins unless the user supplies a replacement commit.
 - Five user-maintained module forks contain the known compatibility fixes:
 
@@ -63,14 +65,26 @@ The core pin is `alterational/azerothcore-wotlk.git`, branch `Playerbot`, commit
 
 Two SHA-guarded **core** compatibility patches remain, both restricted to core commit `14c435031d2cb31b1af664af9a83c5d6256302b6`: Ninja/MSVC configuration-path handling and Cygwin install dispatch. They are unrelated to module source fixes and are applied only to the ignored materialized core checkout.
 
+## Windows dependencies and release layout
+
+- **Boost 1.92.0**, prebuilt **MSVC 14.3 x64**, selected explicitly: installer `boost_1_92_0-msvc-14.3-64.exe` from `https://archives.boost.io/release/1.92.0/binaries/`, SHA-256 `90db7bdf26ad34a670fcf5b43c95c5253252098de01402cd758df8e801c383b3`, installed to `C:\local\boost_1_92_0` with libraries in `lib64-msvc-14.3`. `version.hpp` must report `BOOST_VERSION 109200` / `BOOST_LIB_VERSION "1_92"`. Boost is compile/link-only; **no Boost DLL is packaged**.
+- **MySQL 8.4.11**, dynamic: `C:\tools\mysql\current` with the marker `.mysql-version`, `include\mysql.h`, `include\mysql_version.h` (version ID `80411`), `lib\libmysql.lib`, `lib\libmysql.dll`, `bin\mysql.exe`, and `bin\mysqld.exe`. Never `lib\mysqlclient.lib`, and never MySQL 8.4.9, 8.4.10, 8.0.46, or a 26.x release. The dependency cache uses the single exact key `winbuild-deps-boost-1.92.0-msvc14.3-mysql-8.4.11` with no broad restore keys.
+- **MSVC toolset:** the Boost 1.92.0 auto-link tag comes from `_MSC_VER` (`<1950` asks for `vc143`, which is what the prebuilt package ships). The workflow selects an installed `14.3.x` toolset, else `14.4.x`, and always builds with `CL=/DBOOST_ALL_NO_LIB` so the explicit CMake Boost libraries are linked instead of a header-generated `vc145` pragma. The CMake cache check requires the `-vc143-` library set and rejects `-vc144-`/`-vc145-`.
+- Build type **`RelWithDebInfo`**, `MTHREADS=4`, Ninja/MSVC, and the short `Z:` build path. The core is configured with explicit `-DBOOST_ROOT`, `-DMYSQL_ROOT_DIR`, `-DMYSQL_INCLUDE_DIR`, `-DMYSQL_LIBRARY`, and `-DMYSQL_EXECUTABLE`; the generated `core/conf/config.sh` and the build `CMakeCache.txt` are verified before an artifact is accepted.
+- Release root (both the Actions artifact ZIP and a tagged Release ZIP): `authserver.exe`, `worldserver.exe`, and exactly `libmysql.dll`, `libcrypto-3-x64.dll`, `libssl-3-x64.dll`, `legacy.dll`, plus `configs/` (including `configs/modules/`) and the portable `mysql/` tree. No `bin/`, no `etc/`, no `README.txt`, no `SOURCE-PINS.json`, no DLL inventory, no nested ZIP, and no `azerothcore-ownedcore-windows/` prefix inside the archive. The provider search covers `lib/ossl-modules`, `ossl-modules`, `bin/ossl-modules`, then `bin` itself, because the runner image's SLProWeb installer uses `copytobin` and flattens `legacy.dll` into `bin`.
+- `scripts/stage_windows_runtime_dlls.py` stages exactly those four DLLs and verifies the recursive `dumpbin /DEPENDENTS` closure; `scripts/package_runtime.py` builds the root layout; `scripts/assemble_release_zip.py` creates and verifies the single release ZIP in the tag job. The build job uploads the unpacked staging contents, never an inner ZIP.
+
 ## Verification status
 
+- **Verified end to end:** Windows run [39497810227](https://github.com/alterational/azerothcore-ownedcore/actions/runs/39497810227) (PR #3) succeeded for the default profile — provisioning gates, `RelWithDebInfo` configuration, full compile/install, CMake dependency verification (`-vc143-` Boost set, pinned MySQL paths), config staging, four-DLL staging, packaging, artifact upload, and the `verify-artifact` job. Artifact `azerothcore-ownedcore-windows`, 314,108,258 bytes, 14-day retention. No server startup smoke test has been run, and the tag-only release job is skipped on pull requests.
+- Earlier failures that shaped the pipeline: `LNK1104 ... vc145` (auto-link tag follows `_MSC_VER`; the image has only MSVC 14.51, so `CL=-DBOOST_ALL_NO_LIB` plus a `/MD` Boost probe), MSYS rewriting `/DBOOST_ALL_NO_LIB` into a Git path, a verifier that expected `Boost_*_LIBRARY_RELEASE` cache keys although Boost resolves through its config package, a MySQL-path check that matched internal cache bookkeeping, and `legacy.dll` living in `C:\Program Files\OpenSSL\bin` because the SLProWeb installer uses `copytobin`.
+- Current state (2026-10-20): the Boost 1.92.0 / MySQL 8.4.11 / `RelWithDebInfo` / four-DLL / `configs/` + `mysql/` / single-ZIP rebuild is implemented on the session branch and validated by Windows run [39497810227](https://github.com/alterational/azerothcore-ownedcore/actions/runs/39497810227). Local validation passes: `scripts/validate_project.py`, `py_compile`, 65 unit tests (including the DLL-staging, root-layout package, and artifact-inspection suites), JSON validation, and `git diff --check`. A tagged `v*` build is still required before any GitHub Release is published, and no server startup smoke test has been run.
 - Historical Windows run `39099758327` completed build, runtime-config checks, packaging, and artifact upload using the older module SHAs plus temporary compatibility overlays (now removed), with Individual Progression included. That artifact is interim, not validation of the current pins or default profile.
 - Historical Windows run `39123849901` completed successfully for the then-current default no-Individual-Progression PR profile, including build, runtime-config checks, packaging, and artifact upload. It predates the newly authorized Junk to Gold pin, and the old packaging code blanked 30 public config values; that artifact does not validate the new source and is not the corrected deliverable.
 - The local Windows packaging code preserves public `.conf.dist` templates byte-for-byte, creates matching `.conf` siblings in the same relative directories, and applies `config/package-config-edits.json` only to active copies. Against the downloaded 68-template Windows artifact, it generated 68 `.conf` copies, applied all 39 mapped settings with zero warnings, set the existing numeric AHBot keys, and rechecked every `.conf.dist` as byte-identical. This is an end-to-end local package fixture, not a post-change Windows build; run Actions before treating a new artifact as final.
-- Local validation after this packaging update passed: `python3 scripts/validate_project.py`, Python syntax compilation, 12 unit tests (including template-copy, active-edit, Playerbots target, missing-key/file and type-warning behavior), JSON/pin/profile consistency, actual-artifact config smoke test, and `git diff --check`.
+- Historical (2026-10-19) local validation after the earlier packaging update passed: `python3 scripts/validate_project.py`, Python syntax compilation, 12 unit tests (including template-copy, active-edit, Playerbots target, missing-key/file and type-warning behavior), JSON/pin/profile consistency, actual-artifact config smoke test, and `git diff --check`. That suite predates the current four-DLL/root-layout package script.
 - No full Linux/Codespaces build is recorded. No SQL, database migration, or live server test has been run.
-- PR #1 remains open. Recheck Actions before relying on this snapshot, and update this section after post-fix tests or a new run.
+- PR #1 (historical) remains open and untouched. The current session pull request targets `rebuild-897a41c` and must stay unmerged until the user separately approves. Recheck Actions before relying on this snapshot, and update this section after post-fix tests or a new run.
 
 ## Key files
 
@@ -78,6 +92,7 @@ Two SHA-guarded **core** compatibility patches remain, both restricted to core c
 - `config/module-switches.json`, `config/additional-module-settings.json`: reviewed source/runtime configuration policy; `config/package-config-edits.json` controls package-only active `.conf` edits.
 - `scripts/prepare_build.py`: one-command source preparation or post-install runtime configuration.
 - `scripts/validate_project.py`: manifest, lock, configuration-map, and source-selection checks.
-- `scripts/package_config_edits.py`, `scripts/package_runtime.py`: duplicate unchanged templates into package `.conf` copies, apply only mapped edits, and report non-fatal edit warnings.
+- `scripts/package_config_edits.py`, `scripts/package_runtime.py`: duplicate unchanged templates into package `configs/` `.conf` copies, apply only mapped edits, report non-fatal edit warnings, and assemble the root-level release layout.
+- `scripts/stage_windows_runtime_dlls.py`, `scripts/assemble_release_zip.py`, `scripts/verify_package_layout.py`: deterministic four-DLL staging with a recursive `dumpbin` closure check, artifact-root layout verification, and the single-ZIP release assembly/verification step.
 - `scripts/apply_core_compatibility_patches.py`: the two guarded core-only build fixes.
 - `MODULES.md`, `docs/BUILD.md`, `docs/SQL_SETUP.md`, `CHECKOUT_REPORT.md`: inventory and operating guidance.

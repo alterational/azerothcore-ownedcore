@@ -40,7 +40,7 @@ The pinned core builds active module config names from `core/modules/CMakeLists.
 
 ## Active configs in the Windows package
 
-`scripts/package_runtime.py` first copies each selected public `.conf.dist` to the package unchanged, then creates a sibling `.conf` from the same bytes. It applies package-only changes afterward, leaving the `.conf.dist` untouched. The single editable map is [`config/package-config-edits.json`](../config/package-config-edits.json), whose paths are relative to package `etc/`; add entries there for `authserver.conf`, `worldserver.conf`, or a `modules/<filename>.conf` target.
+`scripts/package_runtime.py` copies each installed public `.conf.dist` into the package's `configs/` directory unchanged, then creates a sibling `.conf` from the same bytes. It applies package-only changes afterward, leaving the `.conf.dist` untouched. The single editable map is [`config/package-config-edits.json`](../config/package-config-edits.json), whose paths are relative to package `configs/`; add entries there for `authserver.conf`, `worldserver.conf`, or a `modules/<filename>.conf` target. The package root itself holds only `authserver.exe`, `worldserver.exe`, the four staged runtime DLLs, `configs/`, and the portable `mysql/` tree; the old `bin/` + `etc/` layout is gone.
 
 A missing target file or key, duplicate key, unreadable file, or incompatible value type produces a line in this form:
 
