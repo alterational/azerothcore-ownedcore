@@ -81,14 +81,14 @@ def main() -> int:
     )
     run_step("Apply and verify core compatibility fixes", "apply_core_compatibility_patches.py", [*core_argument, "--apply"])
     run_step(
-        "Apply and verify module master-switch settings",
+        "Verify module master-switch templates are pristine",
         "apply_module_config.py",
-        [*core_argument, "--apply", "--source-templates"],
+        [*core_argument, "--check", "--source-templates"],
     )
     run_step(
-        "Apply and verify additional module settings",
+        "Verify additional module templates are pristine",
         "apply_additional_settings.py",
-        [*core_argument, "--apply", "--source-templates"],
+        [*core_argument, "--check", "--source-templates"],
     )
     run_step(
         "Require the pinned core server config defaults",

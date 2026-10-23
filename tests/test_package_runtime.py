@@ -231,7 +231,7 @@ class PackageLayoutTests(unittest.TestCase):
     def test_repository_edit_map_applies_without_warnings_to_matching_templates(self) -> None:
         """Guard the packaged edit map and the edit engine against drifting apart."""
         edits = load_config_edits()
-        self.assertEqual(len(edits), 39)
+        self.assertEqual(len(edits), 40)
         by_file: dict[str, list] = {}
         for edit in edits:
             by_file.setdefault(edit.relative_file, []).append(edit)
@@ -258,11 +258,70 @@ class PackageLayoutTests(unittest.TestCase):
                 copied, applied, warnings = stage_and_edit_configs(config_dir, DEFAULT_CONFIG_EDITS_PATH)
 
             self.assertEqual(copied, len(by_file))
-            self.assertEqual(applied, 39)
+            self.assertEqual(applied, 40)
             self.assertEqual(warnings, 0, output.getvalue())
             for edit in edits:
                 active = (config_dir / edit.relative_file).read_text(encoding="utf-8")
                 self.assertIn(f"{edit.key} = {edit.value}", active)
+
+    def test_shipped_module_switch_values_match_the_reviewed_list(self) -> None:
+        """Lock the shipped .conf module state so a stale map cannot regress it."""
+        expected = {
+            "modules/CFBG.conf": ("CFBG.Enable", "1"),
+            "modules/bgqueuechecker.conf": ("BGQueueChecker.Enable", "0"),
+            "modules/breakingnews.conf": ("BreakingNews.Enable", "0"),
+            "modules/leech.conf": ("Leech.Enable", "0"),
+            "modules/mod-time_is_time.conf": ("TimeIsTime.SpeedRate", "1.0"),
+            "modules/mod_account_mount.conf": ("Account.Mounts.Enable", "0"),
+            "modules/mod_aoe_loot.conf": ("AOELoot.Enable", "1"),
+            "modules/mod_dungeon_clear.conf": ("DungeonClear.Enable", "1"),
+            "modules/mod_moneyforkills.conf": ("MFK.Enable", "0"),
+            "modules/mod_no_hearthstone_cooldown.conf": ("NoHearthstoneCooldown.Enable", "0"),
+            "modules/mod_npc_free_professions.conf": ("NpcFreeProfessions.Enable", "0"),
+            "modules/mod_player_bot_level_brackets.conf": ("BotLevelBrackets.Enabled", "0"),
+            "modules/mod_pvptitles.conf": ("PvPTitles.Enable", "0"),
+            "modules/random_enchants.conf": ("RandomEnchants.Enable", "0"),
+            "modules/skip_dk_module.conf": ("Skip.Deathknight.Starter.Enable", "0"),
+        }
+        mapped = {(edit.relative_file, edit.key): edit.value for edit in load_config_edits()}
+        for relative_file, (key, value) in expected.items():
+            with self.subTest(config=relative_file):
+                self.assertEqual(mapped.get((relative_file, key)), value)
+
+    def test_packaged_core_configs_get_portable_runtime_paths(self) -> None:
+        expected = {
+            "authserver.conf": {
+                "LogsDir": '"logs"',
+                "SourceDirectory": '"source/azerothCore"',
+                "MySQLExecutable": '"mysql/bin/mysql.exe"',
+                "TempDir": '"temp"',
+            },
+            "worldserver.conf": {
+                "DataDir": '"data"',
+                "LogsDir": '"logs"',
+                "TempDir": '"temp"',
+                "SourceDirectory": '"source/azerothCore"',
+                "MySQLExecutable": '"mysql/bin/mysql.exe"',
+            },
+        }
+        mapped = {}
+        for edit in load_config_edits():
+            mapped.setdefault(edit.relative_file, {})[edit.key] = edit.value
+        for relative_file, settings in expected.items():
+            with self.subTest(config=relative_file):
+                self.assertEqual(mapped.get(relative_file), settings)
+
+    def test_installed_templates_are_byte_identical_after_packaging(self) -> None:
+        """The source .conf.dist tree must never be rewritten by packaging."""
+        import hashlib
+
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = PackageFixture(Path(temporary))
+            before = {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in fixture.config_dir.rglob("*.conf.dist")}
+            self.assertTrue(before)
+            fixture.run()
+            after = {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in fixture.config_dir.rglob("*.conf.dist")}
+            self.assertEqual(before, after)
 
     def test_playerbots_package_targets_match_requested_values(self) -> None:
         values = {

@@ -20,8 +20,8 @@
       "runtime_config": "mod-time_is_time.conf",
       "key": "TimeIsTime.SpeedRate",
       "upstream_default": "1.0",
-      "target": "15.0",
-      "evidence": "OwnedCore page 88 specifies 15 (one in-game day per 96 real minutes); the pinned module's default is 1.0."
+      "target": "1.0",
+      "evidence": "Reviewed and left at the pinned upstream default: the module template and source both ship 1.0. The OwnedCore page's 15 (one in-game day per 96 real minutes) was rejected on review, so the shipped package keeps the upstream rate and no edit is applied."
     }
   ]
 }

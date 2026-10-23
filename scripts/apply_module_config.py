@@ -136,8 +136,17 @@ def main() -> int:
     mode.add_argument("--check", action="store_true", help="read-only check of active runtime config state")
     parser.add_argument("--core-dir", type=Path, default=ROOT / "core", help="pinned core checkout (default: ./core)")
     parser.add_argument("--config-dir", type=Path, default=ROOT / "core" / "env" / "dist" / "etc", help="active AzerothCore config directory")
-    parser.add_argument("--source-templates", action="store_true", help="operate on pinned module conf/*.conf.dist files before compilation")
+    parser.add_argument(
+        "--source-templates",
+        action="store_true",
+        help="verify pinned module conf/*.conf.dist templates still hold their upstream defaults (read-only)",
+    )
     args = parser.parse_args()
+    if args.source_templates and args.apply:
+        parser.error(
+            "--source-templates is verification-only; combine it with --check. "
+            "Module source templates are never modified; policy is applied to active .conf files."
+        )
 
     manifest = read_json(MANIFEST_PATH)
     lock = read_json(LOCK_PATH)
@@ -150,6 +159,7 @@ def main() -> int:
     changes: dict[Path, str] = {}
     changed_keys: list[tuple[str, str, str, str]] = []
     switch_count = 0
+    pristine_count = 0
     default_count = 0
     no_master_count = 0
     skipped_optional_count = 0
@@ -211,19 +221,16 @@ def main() -> int:
         target = enabled_value if module["enabled"] else disabled_value
 
         if template_mode:
-            if args.check and canonical_value(source_value) != canonical_value(target):
-                fail(f"{mid}: {key} in {source_path} is {source_value}, expected {target} from manifest enabled={module['enabled']}")
-            if canonical_value(source_value) not in {canonical_value(upstream), canonical_value(target)}:
+            # Source templates are public and ship verbatim, so they must keep
+            # the pinned upstream default. Manifest policy belongs in the active
+            # .conf files only; this mode therefore verifies and never writes.
+            if canonical_value(source_value) != canonical_value(upstream):
                 fail(
-                    f"{mid}: {key} in {source_path} is {source_value}; expected the audited upstream default "
-                    f"{upstream} or the manifest target {target}. Refusing to overwrite an unreviewed value."
+                    f"{mid}: {key} in {source_path} is {source_value}; module source templates must keep "
+                    f"the pinned upstream default {upstream}. Policy is applied to active .conf files only."
                 )
-            new_text, before = replace_assignment(source_text, key, target, source_path)
-            if canonical_value(before) != canonical_value(target):
-                changes[source_path] = new_text
-                changed_keys.append((mid, key, before, target))
-            else:
-                changes.setdefault(source_path, new_text)
+            pristine_count += 1
+            continue
         else:
             if canonical_value(source_value) not in {canonical_value(upstream), canonical_value(target)}:
                 fail(
@@ -249,8 +256,16 @@ def main() -> int:
                 changes.setdefault(runtime_path, new_text)
         switch_count += 1
 
+    if template_mode:
+        print(
+            f"Source module templates are pristine: {pristine_count} master switches hold the pinned upstream "
+            f"default, {default_count} upstream-default policies verified, {no_master_count} modules have no "
+            f"module-wide switch, {skipped_optional_count} optional module source(s) excluded from this build."
+        )
+        return 0
+
     if args.check:
-        scope = "source .conf.dist templates" if template_mode else "active runtime configs"
+        scope = "active runtime configs"
         print(
             f"{scope} valid: {switch_count} master switches match the manifest, "
             f"{default_count} upstream defaults are preserved, {no_master_count} modules have no module-wide switch, "

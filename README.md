@@ -35,7 +35,7 @@ The preparation command validates and materializes the pinned sources, applies a
 - [Build and Codespaces guide](docs/BUILD.md)
 - [Source/build verification status](CHECKOUT_REPORT.md)
 
-Learn Spells uses the approved [azerothcore/mod-learn-spells](https://github.com/azerothcore/mod-learn-spells) repository. City Life remains enabled. Dungeon Clear stays in the selected source build, while the packaging-only config map sets `DungeonClear.Enable = 0` in its generated active `.conf`; its public `.conf.dist` remains unchanged. Build preparation and packaging never execute SQL, but AzerothCore may apply compiled-module migrations at server startup; review [docs/SQL_SETUP.md](docs/SQL_SETUP.md) first. City Life's world SQL remains manual.
+Learn Spells uses the approved [azerothcore/mod-learn-spells](https://github.com/azerothcore/mod-learn-spells) repository. City Life remains enabled. Dungeon Clear stays in the selected source build and ships enabled at its upstream default in both its generated active `.conf` and its public `.conf.dist`. Build preparation and packaging never execute SQL, but AzerothCore may apply compiled-module migrations at server startup; review [docs/SQL_SETUP.md](docs/SQL_SETUP.md) first. City Life's world SQL remains manual.
 
 ## CI and safety
 

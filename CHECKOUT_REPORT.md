@@ -33,6 +33,7 @@ The 14 runtime-off modules remain compiled in the default profile. Seven of them
 - **Configuration:** `RelWithDebInfo` with explicit `-DBOOST_ROOT` and the four `-DMYSQL_*` options in `core/conf/config.sh`; the written file and the resulting `CMakeCache.txt` are both verified. The build directory must be clean before configuration.
 - **DLLs:** exactly `libmysql.dll` (MySQL `lib`), `libcrypto-3-x64.dll`, `libssl-3-x64.dll`, and `legacy.dll` (OpenSSL `bin`), with a recursive `dumpbin /DEPENDENTS` closure check. Debug, Boost, VC++ runtime, extra, and private DLLs fail the step.
 - **Package:** root-level `authserver.exe`, `worldserver.exe`, those four DLLs, `configs/` (unchanged `.conf.dist` templates plus generated active `.conf` copies, including `configs/modules/`), and the portable `mysql/` tree. No `bin/`, `etc/`, `README.txt`, `SOURCE-PINS.json`, inventory file, or nested ZIP.
+- **Configs:** every packaged `.conf.dist` is byte-identical to its pinned upstream template, because no build or packaging step writes to a template; policy reaches the generated active `.conf` only. The package map also points `DataDir`, `LogsDir`, `TempDir`, `SourceDirectory`, and `MySQLExecutable` at package-relative paths so the bundled `mysql/` tree is used.
 - **Publication:** the build job uploads the unpacked staging contents, a `verify-artifact` job re-inspects the uploaded root, and the tag job rebuilds one root-relative ZIP with `zipfile` and verifies the namelist before publishing.
 
 ## Verified state

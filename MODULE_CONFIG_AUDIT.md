@@ -6,7 +6,7 @@ This audit is based on the pinned module sources reviewed on 2026-10-17. On 2026
 
 The pinned core builds `CONFIG_FILE_LIST` from each selected module’s `conf/*.conf.dist` in `core/modules/CMakeLists.txt`. `worldserver` passes this list to `ConfigMgr::Configure` in `core/src/server/apps/worldserver/Main.cpp`, calls `LoadModulesConfigs`, and the pinned `ConfigMgr::LoadModulesConfigs` reads each named file from `GetConfigPath()/modules/`. The `acore.sh compiler` install path copies the templates to the configured runtime directory and, when `AC_ENABLE_CONF_COPY_ON_INSTALL` is enabled (default `1`), copies missing `.conf.dist` files to active `.conf` files. Therefore the configuration applicator updates the loaded `.conf` files directly; it does not depend on unreferenced fragments.
 
-`config/module-switches.json` records the template, active filename, default, key, and a source-code reference for every master switch. `scripts/apply_module_config.py --apply` applies only these key values; `--check` is read-only. `config/additional-module-settings.json` and `scripts/apply_additional_settings.py` track the reviewed RDF and TimeIsTime values separately. The Windows workflow builds and installs the module templates, applies these maps to the installed active `.conf` files, and packages the result, so the values below are applied in the shipped artifact rather than only checked locally.
+`config/module-switches.json` records the template, active filename, default, key, and a source-code reference for every master switch. `scripts/apply_module_config.py --apply` sets only these key values, and only in installed active `.conf` files; `--check --source-templates` verifies that pinned `.conf.dist` templates still hold their upstream defaults and never writes to them. `config/additional-module-settings.json` and `scripts/apply_additional_settings.py` track the reviewed RDF and TimeIsTime values separately. The Windows workflow builds and installs the module templates, applies these maps to the installed active `.conf` files, and packages the result, so the values below are applied in the shipped artifact rather than only checked locally.
 
 ## Additional requested settings
 
@@ -14,7 +14,7 @@ The pinned core builds `CONFIG_FILE_LIST` from each selected module’s `conf/*.
 |---|---:|---:|---|---|
 | `RDF.Expansion` | `2` | `2` | Additional-settings checker | Already the pinned Wrath default; no change |
 | `Dynamic.XP.Rate` | `1` | `1` | Master-switch map | OwnedCore default and enabled-module target; no value change |
-| `TimeIsTime.SpeedRate` | `1.0` | `15.0` | Additional-settings applicator | One in-game day per 96 real minutes; changed in the generated source template |
+| `TimeIsTime.SpeedRate` | `1.0` | `1.0` | Reviewed, no edit | Left at the pinned upstream default; the OwnedCore post's `15` was rejected on review |
 
 The OwnedCore settings were checked against the thread's [page 61](https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-general-releases/1040387-azerothcore-wotlk-repack-playerbots-individual-progression-32-other-modules-61.html) and [page 88](https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-general-releases/1040387-azerothcore-wotlk-repack-playerbots-individual-progression-32-other-modules-88.html). The pinned module templates/source confirm `RDF.Expansion = 2`, `Dynamic.XP.Rate = 1`, and `TimeIsTime.SpeedRate = 1.0` before application.
 
