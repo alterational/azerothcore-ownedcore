@@ -5,7 +5,7 @@ A reproducible source-build workspace for the user's AzerothCore Playerbots fork
 ## Build profile
 
 - **Core:** `alterational/azerothcore-wotlk`, branch `Playerbot`, commit `14c435031d2cb31b1af664af9a83c5d6256302b6`.
-- **Modules:** 70 immutable source pins; 56 are enabled and 14 are initially runtime-off. The default build selects 69 module sources (55 enabled plus all 14 runtime-off modules).
+- **Modules:** 70 immutable source pins; 55 are enabled and 15 are initially runtime-off. The default build selects 69 module sources (54 enabled plus all 15 runtime-off modules).
 - **Individual Progression:** pinned and enabled for explicit use, but excluded from the default source build. Add it only when requested.
 - **Compatibility:** previously identified module API fixes are included in the selected user-fork commits. No module-specific source overlays are needed.
 

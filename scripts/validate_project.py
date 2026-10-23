@@ -313,8 +313,8 @@ def check() -> tuple[dict, dict]:
     if len(ids) != len(set(ids)):
         duplicates = sorted({module_id for module_id in ids if ids.count(module_id) > 1})
         fail("Duplicate module IDs: " + ", ".join(duplicates))
-    if len(modules) != 70 or enabled_count != 56 or disabled_count != 14:
-        fail(f"Expected 70 modules (56 enabled, 14 initially disabled), got {len(modules)} ({enabled_count} enabled, {disabled_count} disabled)")
+    if len(modules) != 70 or enabled_count != 55 or disabled_count != 15:
+        fail(f"Expected 70 modules (55 enabled, 15 initially disabled), got {len(modules)} ({enabled_count} enabled, {disabled_count} disabled)")
     if set(ids) != set(lock_modules):
         missing = sorted(set(ids) - set(lock_modules))
         extra = sorted(set(lock_modules) - set(ids))

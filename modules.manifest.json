@@ -20,7 +20,7 @@
       "source_url": "https://github.com/alterational/BGQueueChecker",
       "clone_url": "https://github.com/alterational/BGQueueChecker.git",
       "install": true,
-      "enabled": true,
+      "enabled": false,
       "optional": false,
       "added_on": null,
       "listed_in": [
@@ -146,7 +146,7 @@
       "source_url": "https://github.com/alterational/mod-aoe-loot",
       "clone_url": "https://github.com/alterational/mod-aoe-loot.git",
       "install": true,
-      "enabled": false,
+      "enabled": true,
       "optional": false,
       "added_on": "21-05-2025",
       "listed_in": [
@@ -272,7 +272,7 @@
       "source_url": "https://github.com/azerothcore/mod-breaking-news-override",
       "clone_url": "https://github.com/azerothcore/mod-breaking-news-override.git",
       "install": true,
-      "enabled": true,
+      "enabled": false,
       "optional": false,
       "added_on": null,
       "listed_in": [
@@ -293,7 +293,7 @@
       "source_url": "https://github.com/azerothcore/mod-cfbg",
       "clone_url": "https://github.com/azerothcore/mod-cfbg.git",
       "install": true,
-      "enabled": false,
+      "enabled": true,
       "optional": false,
       "added_on": "19-03-2025",
       "listed_in": [
@@ -1072,8 +1072,8 @@
     {
       "id": "mod-playerbots-city-life",
       "name": "City Life",
-      "source_url": "https://github.com/vrzgames/mod-playerbots-city-life",
-      "clone_url": "https://github.com/vrzgames/mod-playerbots-city-life.git",
+      "source_url": "https://github.com/chenyifeiai/mod-playerbots-city-life",
+      "clone_url": "https://github.com/chenyifeiai/mod-playerbots-city-life.git",
       "install": true,
       "enabled": true,
       "optional": false,
@@ -1098,7 +1098,7 @@
       "source_url": "https://github.com/azerothcore/mod-pvp-titles",
       "clone_url": "https://github.com/azerothcore/mod-pvp-titles.git",
       "install": true,
-      "enabled": true,
+      "enabled": false,
       "optional": false,
       "added_on": null,
       "listed_in": [

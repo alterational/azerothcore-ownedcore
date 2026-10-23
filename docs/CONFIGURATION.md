@@ -1,6 +1,6 @@
 # Runtime module and server configuration
 
-`modules.manifest.json` records 56 manifest-enabled and 14 initially runtime-off modules across 70 locked sources. The standard build selects 69 source checkouts: all 14 runtime-off modules remain compiled, while the optional `mod-individual-progression` source is omitted until explicitly requested. If Individual Progression is selected, its manifest state remains enabled and its reviewed config value is applied.
+`modules.manifest.json` records 55 manifest-enabled and 15 initially runtime-off modules across 70 locked sources. The standard build selects 69 source checkouts: all 15 runtime-off modules remain compiled, while the optional `mod-individual-progression` source is omitted until explicitly requested. If Individual Progression is selected, its manifest state remains enabled and its reviewed config value is applied.
 
 ## Audited module maps
 
@@ -52,7 +52,7 @@ The edit is skipped without inserting a new key or coercing a boolean to a numbe
 
 The package map also rewrites the core runtime locations so the package is self-contained: `authserver.conf` gets `LogsDir`, `SourceDirectory`, `MySQLExecutable`, and `TempDir`, and `worldserver.conf` gets those plus `DataDir`, all as quoted paths relative to the package root (`"logs"`, `"data"`, `"temp"`, `"source/azerothCore"`, `"mysql/bin/mysql.exe"`), where the portable `mysql/` tree actually ships. The `.conf.dist` files keep their pinned upstream values for those keys.
 
-Module master-switch entries in this map are the reviewed shipped state. Where a shipped value differs from `modules.manifest.json`, the value must be the audited upstream default; `scripts/validate_project.py` rejects anything else and prints every such override (currently CFBG, BGQueueChecker, Breaking News, AOE Loot, and PvP Titles). Entries whose value already matches upstream are harmless no-ops that document the intended state.
+Module master-switch entries in this map are the reviewed shipped state and must agree with `modules.manifest.json`. If a future map ever needs to deviate, the deviation may only be the audited upstream default: `scripts/validate_project.py` rejects any other value and lists every override it accepts. Entries whose value already matches upstream are harmless no-ops that document the intended state.
 
 After a successful build/install, apply and verify all build-repository runtime settings from the repository root with one command:
 
@@ -64,7 +64,7 @@ On Linux, the default active directory is `core/env/dist/etc`. On Windows, use `
 
 ## Decisions and limits
 
-- All 14 initially runtime-off module sources remain in the standard build and are compiled even with their master switches set to `0`. Individual Progression is separate: it is not checked out/compiled in the standard build, and its source is included only on explicit opt-in. A config switch alone never substitutes for omitting or adding the source.
+- All 15 initially runtime-off module sources remain in the standard build and are compiled even with their master switches set to `0`. Individual Progression is separate: it is not checked out/compiled in the standard build, and its source is included only on explicit opt-in. A config switch alone never substitutes for omitting or adding the source.
 - City Life stays enabled at its pinned default `CityLife.Enable = 1`. Dungeon Clear remains included, manifest-enabled, and enabled at its upstream default `DungeonClear.Enable = 1` in both the generated active `.conf` and the `.conf.dist`.
 - Modules with no master switch are documented instead of receiving invented keys. The package map edits only the existing numeric AHBot keys `AuctionHouseBot.EnableSeller = 1` and `AuctionHouseBot.ItemsPerCycle = 100`; it does not invent optional capacity/buyer/GUID/expiry keys absent from the pinned template.
 - Other prerequisites and setup are described in the pinned module READMEs and [`SQL_SETUP.md`](SQL_SETUP.md). They do not justify changing unspecified config defaults.

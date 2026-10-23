@@ -361,7 +361,7 @@
       "refresh_ok": true
     },
     "mod-playerbots-city-life": {
-      "url": "https://github.com/vrzgames/mod-playerbots-city-life.git",
+      "url": "https://github.com/chenyifeiai/mod-playerbots-city-life.git",
       "branch": "main",
       "commit": "274110c26ff0785a369debdf84dd44ed38ec29fd",
       "resolved": true,

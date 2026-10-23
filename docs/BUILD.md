@@ -52,7 +52,7 @@ On Windows, add `--config-dir core/env/dist/configs`. This mode applies both rev
 
 ## Materialized sources and configuration
 
-`materialize.py` shallow-clones the locked core and selected modules. The default selection includes 69 modules (all 14 runtime-off modules included) and omits only `mod-individual-progression`. When switching back to the default profile, it removes an existing optional checkout only if it is a clean Git checkout at the exact locked SHA; modified or unrecognized directories are preserved.
+`materialize.py` shallow-clones the locked core and selected modules. The default selection includes 69 modules (all 15 runtime-off modules included) and omits only `mod-individual-progression`. When switching back to the default profile, it removes an existing optional checkout only if it is a clean Git checkout at the exact locked SHA; modified or unrecognized directories are preserved.
 
 The compatibility-sensitive module fixes are in the locked commits of the user's forks:
 

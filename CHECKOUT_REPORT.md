@@ -6,7 +6,7 @@
 
 ## Pinned sources and profile
 
-The core is `alterational/azerothcore-wotlk.git`, branch `Playerbot`, commit `14c435031d2cb31b1af664af9a83c5d6256302b6`. The inventory contains 70 locked modules: 56 manifest-enabled, 14 runtime-off. The default build selects 69 module sources and excludes only `mod-individual-progression`.
+The core is `alterational/azerothcore-wotlk.git`, branch `Playerbot`, commit `14c435031d2cb31b1af664af9a83c5d6256302b6`. The inventory contains 70 locked modules: 55 manifest-enabled, 15 runtime-off. The default build selects 69 module sources and excludes only `mod-individual-progression`.
 
 Five user-maintained forks contain the known module compatibility fixes:
 
@@ -24,7 +24,7 @@ There are no module-specific overlay patches or patch runner: the fixes are part
 
 The default profile installs 69 `.conf.dist` templates: two core templates and 67 module templates. Only `mod-better-item-reloading` and `mod-dual-tracking` ship no module template at their locked revisions. Packaging keeps every template byte-identical and generates an active `.conf` beside it.
 
-The 14 runtime-off modules remain compiled in the default profile. Seven of them contain SQL files at their locked revisions: `mod-cfbg` (2), `mod-npc-free-professions` (1), `mod-ollama-chat` (9), `mod-player-bot-level-brackets` (1), `mod-random-enchants` (1), `mod-skip-dk-starting-area` (1), and `mod-war-effort` (4). See [docs/SQL_SETUP.md](docs/SQL_SETUP.md) for the SQL path inventory. No SQL or database migration has been run; City Life's world SQL remains manual.
+The 15 runtime-off modules remain compiled in the default profile. Seven of them contain SQL files at their locked revisions: `mod-cfbg` (2), `mod-npc-free-professions` (1), `mod-ollama-chat` (9), `mod-player-bot-level-brackets` (1), `mod-random-enchants` (1), `mod-skip-dk-starting-area` (1), and `mod-war-effort` (4). See [docs/SQL_SETUP.md](docs/SQL_SETUP.md) for the SQL path inventory. No SQL or database migration has been run; City Life's world SQL remains manual.
 
 ## Windows build and release layout
 
