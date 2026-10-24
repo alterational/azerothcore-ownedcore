@@ -85,7 +85,7 @@ jobs:
           path: |
             C:\local\boost_1_92_0
             C:\tools\mysql\current
-          key: winbuild-deps-boost-1.92.0-msvc14.3-mysql-8.4.11
+          key: winbuild-deps-boost-1.92.0-msvc14.3-mysql-8.4.7
 
       - name: Configure Windows dependencies
         shell: pwsh
@@ -94,7 +94,7 @@ jobs:
           $boostRoot = 'C:\local\boost_1_92_0'
           $boostVersion = '1.92.0'
           $mysqlRoot = 'C:\tools\mysql\current'
-          $mysqlVersion = '8.4.11'
+          $mysqlVersion = '8.4.7'
 
           function Test-BoostInstall {
             param([string]$Root, [string]$Version)
@@ -520,7 +520,7 @@ jobs:
           $mysqlPathKeys = '^(MYSQL_ROOT_DIR|MYSQL_INCLUDE_DIR|MYSQL_LIBRARY|MYSQL_EXECUTABLE|MYSQL_CONFIG):'
           $foreignMysql = $lines | Where-Object { $_ -match $mysqlPathKeys } | Where-Object { $_ -notmatch 'C:/tools/mysql/current' }
           if ($foreignMysql) {
-            Fail-Check 'CMake cache' "The CMake cache references MySQL outside the gated 8.4.11 tree: $($foreignMysql -join '; ')"
+            Fail-Check 'CMake cache' "The CMake cache references MySQL outside the gated 8.4.7 tree: $($foreignMysql -join '; ')"
           }
 
           # Boost is discovered through its CMake config package, so the selected
@@ -616,7 +616,7 @@ jobs:
             --mysql-root 'C:\tools\mysql\current' `
             --openssl-bin-dir 'C:\openssl\bin' `
             --output-dir 'core/env/runtime-dlls' `
-            --mysql-version '8.4.11' `
+            --mysql-version '8.4.7' `
             --dumpbin 'dumpbin' 2>&1 | Tee-Object -Variable output
           if ($LASTEXITCODE -ne 0) {
             $details = (($output | ForEach-Object { "$_" }) -join ' | ')

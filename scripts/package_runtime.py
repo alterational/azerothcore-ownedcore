@@ -31,7 +31,7 @@ ROOT_DIRECTORIES = ("configs", "mysql")
 STAGING_DIRECTORY_NAME = "azerothcore-ownedcore-windows"
 ARCHIVE_NAME = "azerothcore-ownedcore-windows.zip"
 MYSQL_VERSION_MARKER = ".mysql-version"
-EXPECTED_MYSQL_VERSION = "8.4.11"
+EXPECTED_MYSQL_VERSION = "8.4.7"
 FORBIDDEN_ROOT_DIRECTORIES = ("bin", "etc")
 REQUIRED_ROOT_FILES = (*SERVER_BINARIES, *ROOT_RUNTIME_DLLS)
 REQUIRED_CONFIG_FILES = (
@@ -297,7 +297,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dist-dir", type=Path, default=ROOT / "core" / "env" / "dist", help="installed binary directory containing both server executables")
     parser.add_argument("--dll-dir", type=Path, default=ROOT / "core" / "env" / "runtime-dlls", help="validated four-DLL staging directory")
-    parser.add_argument("--mysql-root", type=Path, required=True, help="portable MySQL 8.4.11 tree copied under mysql/")
+    parser.add_argument("--mysql-root", type=Path, required=True, help="portable MySQL 8.4.7 tree copied under mysql/")
     parser.add_argument("--config-dir", type=Path, help="installed .conf.dist template directory (default: <dist-dir>/configs)")
     parser.add_argument("--output", type=Path, default=ROOT / "runtime-package", help="output directory for the staging tree and optional ZIP")
     parser.add_argument("--config-edits", type=Path, default=DEFAULT_CONFIG_EDITS_PATH, help="JSON map of edits for generated active .conf copies")

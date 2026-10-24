@@ -3,7 +3,7 @@
 
 The release root may contain exactly four application DLLs:
 
-* ``libmysql.dll`` from the gated MySQL 8.4.11 ``lib`` directory,
+* ``libmysql.dll`` from the gated MySQL 8.4.7 ``lib`` directory,
 * ``libcrypto-3-x64.dll`` and ``libssl-3-x64.dll`` from the selected OpenSSL
   ``bin`` directory,
 * ``legacy.dll`` from the selected OpenSSL provider-module directory.
@@ -34,7 +34,7 @@ REQUIRED_RUNTIME_DLLS = (
     "libssl-3-x64.dll",
     "legacy.dll",
 )
-REQUIRED_MYSQL_VERSION = "8.4.11"
+REQUIRED_MYSQL_VERSION = "8.4.7"
 SYSTEM_API_PREFIXES = ("api-ms-win-", "ext-ms-win-")
 DEPENDENCY_RE = re.compile(r"^\s*([A-Za-z0-9_.+-]+\.dll)\s*$", re.IGNORECASE)
 VC_RUNTIME_DLL_RE = re.compile(r"^(?:concrt|msvcp|vccorlib|vcruntime|vcomp)\d+.*\.dll$", re.IGNORECASE)
@@ -322,7 +322,7 @@ def write_inventory(report: dict, inventory_path: Path) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary-dir", type=Path, required=True, help="installed directory containing both server executables")
-    parser.add_argument("--mysql-root", type=Path, required=True, help="gated MySQL 8.4.11 portable root")
+    parser.add_argument("--mysql-root", type=Path, required=True, help="gated MySQL 8.4.7 portable root")
     parser.add_argument("--openssl-bin-dir", type=Path, required=True, help="selected OpenSSL bin directory")
     parser.add_argument("--output-dir", type=Path, required=True, help="initially empty DLL staging directory")
     parser.add_argument("--inventory", type=Path, help="inventory JSON path (default: <output-dir>.json, outside the staging tree)")

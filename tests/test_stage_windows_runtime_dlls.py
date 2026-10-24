@@ -216,7 +216,7 @@ class StagingSuccessTests(unittest.TestCase):
             self.assertEqual(written, fixture.inventory.resolve())
             self.assertEqual(fixture.staged_names(), sorted(REQUIRED_RUNTIME_DLLS))
             inventory = json.loads(fixture.inventory.read_text(encoding="utf-8"))
-            self.assertEqual(inventory["mysql_client_version"], "8.4.11")
+            self.assertEqual(inventory["mysql_client_version"], "8.4.7")
             self.assertEqual(inventory["schema_version"], 1)
 
 

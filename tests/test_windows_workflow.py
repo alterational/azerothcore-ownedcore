@@ -44,7 +44,7 @@ class WindowsWorkflowTests(unittest.TestCase):
         self.assertEqual(build["env"]["BOOST_ROOT"], r"C:\local\boost_1_92_0")
 
         cache = step(self.workflow, "build", "Cache Boost and MySQL client")
-        self.assertEqual(cache["with"]["key"], "winbuild-deps-boost-1.92.0-msvc14.3-mysql-8.4.11")
+        self.assertEqual(cache["with"]["key"], "winbuild-deps-boost-1.92.0-msvc14.3-mysql-8.4.7")
         self.assertNotIn("restore-keys", cache["with"])
         self.assertIn(r"C:\local\boost_1_92_0", cache["with"]["path"])
         self.assertIn(r"C:\tools\mysql\current", cache["with"]["path"])
@@ -58,13 +58,13 @@ class WindowsWorkflowTests(unittest.TestCase):
         self.assertIn("#define\\s+BOOST_VERSION\\s+109200", dependencies)
         self.assertIn("#define\\s+BOOST_LIB_VERSION\\s+\"1_92\"", dependencies)
         self.assertIn("lib64-msvc-14.3", dependencies)
-        self.assertIn("$mysqlVersion = '8.4.11'", dependencies)
+        self.assertIn("$mysqlVersion = '8.4.7'", dependencies)
         self.assertIn("https://cdn.mysql.com/archives/mysql-8.4/mysql-$mysqlVersion-winx64.zip", dependencies)
         self.assertIn(".mysql-version", dependencies)
         self.assertIn("lib\\libmysql.lib", dependencies)
         self.assertIn("lib\\libmysql.dll", dependencies)
 
-        for retired in ("1.87.0", "boost_1_87_0", "mysql-8.4.9", "mysql-8.4.10", "8.0.46"):
+        for retired in ("1.87.0", "boost_1_87_0", "mysql-8.4.9", "mysql-8.4.10", "mysql-8.4.11", "8.0.46"):
             self.assertNotIn(retired, self.text)
 
     def test_core_configuration_is_relwithdebinfo_with_explicit_mysql_paths(self) -> None:

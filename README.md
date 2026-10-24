@@ -39,7 +39,7 @@ Learn Spells uses the approved [azerothcore/mod-learn-spells](https://github.com
 
 ## CI and safety
 
-The Windows workflow verifies the pinned core defaults before building, uses four build threads, checks installed runtime configuration, and packages only after the build succeeds. It pins Boost **1.92.0** (prebuilt MSVC 14.3 x64, SHA-256-verified installer) and portable MySQL **8.4.11** with the dynamic `libmysql.lib`, builds with `RelWithDebInfo`, and verifies the generated `core/conf/config.sh` and the CMake dependency cache before packaging. Individual Progression is excluded from pull-request, push, and tag builds; manual workflow dispatch can opt it in. A versioned release is restricted to a successful no-Individual-Progression tag build.
+The Windows workflow verifies the pinned core defaults before building, uses four build threads, checks installed runtime configuration, and packages only after the build succeeds. It pins Boost **1.92.0** (prebuilt MSVC 14.3 x64, SHA-256-verified installer) and portable MySQL **8.4.7** with the dynamic `libmysql.lib`, builds with `RelWithDebInfo`, and verifies the generated `core/conf/config.sh` and the CMake dependency cache before packaging. Individual Progression is excluded from pull-request, push, and tag builds; manual workflow dispatch can opt it in. A versioned release is restricted to a successful no-Individual-Progression tag build.
 
 The published archive is a single ZIP whose root directly contains `authserver.exe`, `worldserver.exe`, exactly the four runtime DLLs (`libmysql.dll`, `libcrypto-3-x64.dll`, `libssl-3-x64.dll`, `legacy.dll`), `configs/` with `configs/modules/`, and the portable `mysql/` tree. There is no `bin/`, no `etc/`, no developer metadata, and no ZIP inside the ZIP.
 

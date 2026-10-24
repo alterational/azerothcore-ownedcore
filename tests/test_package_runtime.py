@@ -68,11 +68,11 @@ class PackageFixture:
         (self.mysql_root / "bin").mkdir(parents=True)
         (self.mysql_root / "lib").mkdir()
         (self.mysql_root / "share" / "english").mkdir(parents=True)
-        (self.mysql_root / ".mysql-version").write_text("8.4.11\n", encoding="utf-8")
-        (self.mysql_root / "mysql-8.4.11-winx64.zip").write_bytes(b"downloaded archive")
+        (self.mysql_root / ".mysql-version").write_text("8.4.7\n", encoding="utf-8")
+        (self.mysql_root / "mysql-8.4.7-winx64.zip").write_bytes(b"downloaded archive")
         (self.mysql_root / "bin" / "mysqld.exe").write_bytes(b"mysqld")
         (self.mysql_root / "bin" / "mysql.exe").write_bytes(b"mysql client")
-        (self.mysql_root / "lib" / "libmysql.dll").write_bytes(b"libmysql 8.4.11")
+        (self.mysql_root / "lib" / "libmysql.dll").write_bytes(b"libmysql 8.4.7")
         (self.mysql_root / "share" / "english" / "errmsg.sys").write_bytes(b"messages")
 
         (self.config_dir / "authserver.conf.dist").write_bytes(self.auth_template)
@@ -205,7 +205,7 @@ class PackageLayoutTests(unittest.TestCase):
             )
             self.assertNotIn(b"PRIVATE_MACHINE_VALUE", packaged_active)
             self.assertNotIn("configs/modules/not-installed.conf", entry_names)
-            self.assertEqual(mysql_dll, b"libmysql 8.4.11")
+            self.assertEqual(mysql_dll, b"libmysql 8.4.7")
 
             self.assertIn(
                 "WARNING: couldn't apply config edit for: modules/sample.conf, key Demo.Flag true 1",
@@ -220,7 +220,7 @@ class PackageLayoutTests(unittest.TestCase):
                 result.stdout,
             )
             self.assertIn("3 non-fatal warning(s)", result.stdout)
-            self.assertIn("version marker: 8.4.11", result.stdout)
+            self.assertIn("version marker: 8.4.7", result.stdout)
             self.assertNotIn("redact", result.stdout.lower())
 
             self.assertEqual(
@@ -378,7 +378,7 @@ class PackageValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             fixture = PackageFixture(Path(temporary))
             (fixture.mysql_root / ".mysql-version").write_text("8.4.10\n", encoding="utf-8")
-            self.assertIn("requires 8.4.11", self.run_failing(fixture))
+            self.assertIn("requires 8.4.7", self.run_failing(fixture))
 
     def test_legacy_layout_entries_are_rejected(self) -> None:
         base = ["authserver.exe", "worldserver.exe", *ROOT_RUNTIME_DLLS]
