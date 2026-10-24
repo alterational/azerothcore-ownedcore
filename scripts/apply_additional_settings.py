@@ -81,8 +81,17 @@ def main() -> int:
     mode.add_argument("--check", action="store_true", help="read-only check of target values")
     parser.add_argument("--core-dir", type=Path, default=ROOT / "core", help="pinned core checkout")
     parser.add_argument("--config-dir", type=Path, default=ROOT / "core" / "env" / "dist" / "etc", help="active AzerothCore config directory")
-    parser.add_argument("--source-templates", action="store_true", help="operate on module conf/*.conf.dist files before compilation")
+    parser.add_argument(
+        "--source-templates",
+        action="store_true",
+        help="verify module conf/*.conf.dist templates still hold their upstream defaults (read-only)",
+    )
     args = parser.parse_args()
+    if args.source_templates and args.apply:
+        parser.error(
+            "--source-templates is verification-only; combine it with --check. "
+            "Module source templates are never modified; policy is applied to active .conf files."
+        )
 
     manifest = load_json(MANIFEST_PATH)
     lock = load_json(LOCK_PATH)
@@ -117,14 +126,13 @@ def main() -> int:
             )
 
         if template_mode:
-            if args.check and canonical_value(source_value) != canonical_value(target):
-                fail(f"{module_id}: {entry['key']} in {source_path} is {source_value}, expected {target}")
-            new_text, before = replace_assignment(source_text, entry["key"], target, source_path)
-            if canonical_value(before) != canonical_value(target):
-                changes[source_path] = new_text
-                changed.append((source_path, entry["key"], before, target))
-            else:
-                changes.setdefault(source_path, new_text)
+            # Same contract as apply_module_config.py: source templates are
+            # shipped verbatim, so verify the upstream default and never write.
+            if canonical_value(source_value) != canonical_value(upstream):
+                fail(
+                    f"{module_id}: {entry['key']} in {source_path} is {source_value}; module source templates "
+                    f"must keep the pinned upstream default {upstream}. Policy is applied to active .conf files only."
+                )
             continue
 
         if not runtime_path.is_file():
@@ -150,8 +158,15 @@ def main() -> int:
         else:
             changes.setdefault(runtime_path, new_text)
 
+    if template_mode:
+        print(
+            f"Source module templates are pristine: {len(settings['settings'])} reviewed non-master settings "
+            f"hold their pinned upstream defaults."
+        )
+        return 0
+
     if args.check:
-        scope = "source module templates" if template_mode else "active module configs"
+        scope = "active module configs"
         print(f"{scope} valid: {len(settings['settings'])} reviewed non-master settings match the target map.")
         return 0
 

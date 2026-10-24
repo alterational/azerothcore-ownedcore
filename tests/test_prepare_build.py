@@ -30,13 +30,27 @@ class PrepareBuildTests(unittest.TestCase):
                 "Materialize pinned core and selected modules",
                 "Verify selected checkout pins",
                 "Apply and verify core compatibility fixes",
-                "Apply and verify module master-switch settings",
-                "Apply and verify additional module settings",
+                "Verify module master-switch templates are pristine",
+                "Verify additional module templates are pristine",
                 "Require the pinned core server config defaults",
             ],
         )
         self.assertIn("--apply", calls[3][2])
         self.assertNotIn("--check", calls[3][2])
+
+    def test_source_template_steps_only_verify_and_never_write(self) -> None:
+        calls = self.run_main([])
+        for label, script in (
+            ("Verify module master-switch templates are pristine", "apply_module_config.py"),
+            ("Verify additional module templates are pristine", "apply_additional_settings.py"),
+        ):
+            call = next(item for item in calls if item[0] == label)
+            self.assertEqual(call[1], script)
+            self.assertIn("--source-templates", call[2])
+            self.assertIn("--check", call[2])
+            # Source templates ship verbatim: a write step here is the bug that
+            # let policy values leak into public .conf.dist files.
+            self.assertNotIn("--apply", call[2])
 
     def test_optional_module_is_forwarded_to_materialize_and_checkout_check(self) -> None:
         calls = self.run_main(["--include-module", "mod-individual-progression"])
@@ -50,6 +64,27 @@ class PrepareBuildTests(unittest.TestCase):
         self.assertIn("apply_additional_settings.py", calls[1][1])
         self.assertIn("--runtime", calls[2][2])
         self.assertIn("--require-target", calls[2][2])
+
+
+class SourceTemplateWriteGuardTests(unittest.TestCase):
+    """The applicators must refuse to write to public .conf.dist files."""
+
+    def run_script(self, script: str, *arguments: str):
+        import subprocess
+
+        return subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / script), *arguments],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_apply_with_source_templates_is_refused(self) -> None:
+        for script in ("apply_module_config.py", "apply_additional_settings.py"):
+            with self.subTest(script=script):
+                result = self.run_script(script, "--apply", "--source-templates")
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("verification-only", result.stderr)
+                self.assertIn("never modified", result.stderr)
 
 
 if __name__ == "__main__":

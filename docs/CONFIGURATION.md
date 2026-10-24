@@ -1,6 +1,6 @@
 # Runtime module and server configuration
 
-`modules.manifest.json` records 56 manifest-enabled and 14 initially runtime-off modules across 70 locked sources. The standard build selects 69 source checkouts: all 14 runtime-off modules remain compiled, while the optional `mod-individual-progression` source is omitted until explicitly requested. If Individual Progression is selected, its manifest state remains enabled and its reviewed config value is applied.
+`modules.manifest.json` records 55 manifest-enabled and 15 initially runtime-off modules across 70 locked sources. The standard build selects 69 source checkouts: all 15 runtime-off modules remain compiled, while the optional `mod-individual-progression` source is omitted until explicitly requested. If Individual Progression is selected, its manifest state remains enabled and its reviewed config value is applied.
 
 ## Audited module maps
 
@@ -9,9 +9,9 @@
 `config/additional-module-settings.json` records two additional module settings:
 
 - `RDF.Expansion = 2`: checked against the pinned template and source; this already is the upstream Wrath-of-the-Lich-King default and is not overridden.
-- `TimeIsTime.SpeedRate = 15.0`: changes the pinned `1.0` default so one in-game day takes 96 real minutes, as requested from the OwnedCore post.
+- `TimeIsTime.SpeedRate = 1.0`: reviewed and left at the pinned upstream default, so no edit is applied. The OwnedCore post's `15` was rejected during review.
 
-For the normal build, `python3 scripts/prepare_build.py` applies both source-template maps and verifies the written values. The applicators use only tracked maps, preserve unrelated defaults, fail closed on unexpected values, and write atomically. Their `--check` modes remain available for a separate read-only audit; they are not necessary immediately after `--apply`. City Life remains enabled at `CityLife.Enable = 1`. The source/runtime module map retains Dungeon Clear's upstream `DungeonClear.Enable = 1`, but the separate Windows packaging map intentionally changes only the generated active package copy to `0`; its public `.conf.dist` is not modified. No SQL is run.
+For the normal build, `python3 scripts/prepare_build.py` verifies that every pinned module `.conf.dist` still holds its audited upstream default; it never writes to a template, because public templates ship verbatim. `python3 scripts/prepare_build.py --runtime` then applies both maps to the installed active `.conf` files. The applicators use only tracked maps, preserve unrelated defaults, fail closed on unexpected values, and write atomically. Their `--check` modes remain available for a separate read-only audit; they are not necessary immediately after `--apply`. City Life remains enabled at `CityLife.Enable = 1`. The source/runtime module map retains Dungeon Clear's upstream `DungeonClear.Enable = 1`, but the separate Windows packaging map intentionally changes only the generated active package copy to `0`; its public `.conf.dist` is not modified. No SQL is run.
 
 ## Core authserver/worldserver source defaults
 
@@ -40,7 +40,7 @@ The pinned core builds active module config names from `core/modules/CMakeLists.
 
 ## Active configs in the Windows package
 
-`scripts/package_runtime.py` first copies each selected public `.conf.dist` to the package unchanged, then creates a sibling `.conf` from the same bytes. It applies package-only changes afterward, leaving the `.conf.dist` untouched. The single editable map is [`config/package-config-edits.json`](../config/package-config-edits.json), whose paths are relative to package `etc/`; add entries there for `authserver.conf`, `worldserver.conf`, or a `modules/<filename>.conf` target.
+`scripts/package_runtime.py` copies each installed public `.conf.dist` into the package's `configs/` directory unchanged, then creates a sibling `.conf` from the same bytes. It applies package-only changes afterward, leaving the `.conf.dist` untouched. The single editable map is [`config/package-config-edits.json`](../config/package-config-edits.json), whose paths are relative to package `configs/`; add entries there for `authserver.conf`, `worldserver.conf`, or a `modules/<filename>.conf` target. The package root itself holds only `authserver.exe`, `worldserver.exe`, the four staged runtime DLLs, `configs/`, and the portable `mysql/` tree; the old `bin/` + `etc/` layout is gone.
 
 A missing target file or key, duplicate key, unreadable file, or incompatible value type produces a line in this form:
 
@@ -49,6 +49,10 @@ WARNING: couldn't apply config edit for: modules/mod_ahbot.conf, key AuctionHous
 ```
 
 The edit is skipped without inserting a new key or coercing a boolean to a number (or the reverse). Warnings are non-fatal: they do not fail compilation or stop archive creation. This packaging map is intentionally separate from source-template/runtime module policy; for example, it can override the active package copy without changing the checked source defaults.
+
+The package map also rewrites the core runtime locations so the package is self-contained: `authserver.conf` gets `LogsDir`, `SourceDirectory`, `MySQLExecutable`, and `TempDir`, and `worldserver.conf` gets those plus `DataDir`, all as quoted paths relative to the package root (`"logs"`, `"data"`, `"temp"`, `"source/azerothCore"`, `"mysql/bin/mysql.exe"`), where the portable `mysql/` tree actually ships. The `.conf.dist` files keep their pinned upstream values for those keys.
+
+Module master-switch entries in this map are the reviewed shipped state and must agree with `modules.manifest.json`. If a future map ever needs to deviate, the deviation may only be the audited upstream default: `scripts/validate_project.py` rejects any other value and lists every override it accepts. Entries whose value already matches upstream are harmless no-ops that document the intended state.
 
 After a successful build/install, apply and verify all build-repository runtime settings from the repository root with one command:
 
@@ -60,8 +64,8 @@ On Linux, the default active directory is `core/env/dist/etc`. On Windows, use `
 
 ## Decisions and limits
 
-- All 14 initially runtime-off module sources remain in the standard build and are compiled even with their master switches set to `0`. Individual Progression is separate: it is not checked out/compiled in the standard build, and its source is included only on explicit opt-in. A config switch alone never substitutes for omitting or adding the source.
-- City Life stays enabled at its pinned default `CityLife.Enable = 1`. Dungeon Clear remains included and manifest-enabled in the source build; the package-only map sets `DungeonClear.Enable = 0` in its generated active `.conf` while preserving the `.conf.dist` value and source selection.
-- Modules with no master switch are documented instead of receiving invented keys. The package map now edits only the existing numeric AHBot keys `AuctionHouseBot.EnableSeller = 1` and `AuctionHouseBot.ItemsPerCycle = 100`; it does not invent optional capacity/buyer/GUID/expiry keys absent from the pinned template.
+- All 15 initially runtime-off module sources remain in the standard build and are compiled even with their master switches set to `0`. Individual Progression is separate: it is not checked out/compiled in the standard build, and its source is included only on explicit opt-in. A config switch alone never substitutes for omitting or adding the source.
+- City Life stays enabled at its pinned default `CityLife.Enable = 1`. Dungeon Clear remains included, manifest-enabled, and enabled at its upstream default `DungeonClear.Enable = 1` in both the generated active `.conf` and the `.conf.dist`.
+- Modules with no master switch are documented instead of receiving invented keys. The package map edits only the existing numeric AHBot keys `AuctionHouseBot.EnableSeller = 1` and `AuctionHouseBot.ItemsPerCycle = 100`; it does not invent optional capacity/buyer/GUID/expiry keys absent from the pinned template.
 - Other prerequisites and setup are described in the pinned module READMEs and [`SQL_SETUP.md`](SQL_SETUP.md). They do not justify changing unspecified config defaults.
 - No credentials or server-specific active `.conf` files belong in Git. No database or SQL operation is performed by these scripts.

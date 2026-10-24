@@ -192,7 +192,7 @@ def check_additional_settings_mapping(manifest: dict, lock: dict) -> int:
 
     expected = {
         ("mod-rdf-expansion", "RDF.Expansion"): ("2", "2"),
-        ("mod-TimeIsTime", "TimeIsTime.SpeedRate"): ("1.0", "15.0"),
+        ("mod-TimeIsTime", "TimeIsTime.SpeedRate"): ("1.0", "1.0"),
     }
     if set(by_key) != set(expected):
         fail(f"Unexpected additional module settings keys: {sorted(by_key)}")
@@ -313,8 +313,8 @@ def check() -> tuple[dict, dict]:
     if len(ids) != len(set(ids)):
         duplicates = sorted({module_id for module_id in ids if ids.count(module_id) > 1})
         fail("Duplicate module IDs: " + ", ".join(duplicates))
-    if len(modules) != 70 or enabled_count != 56 or disabled_count != 14:
-        fail(f"Expected 70 modules (56 enabled, 14 initially disabled), got {len(modules)} ({enabled_count} enabled, {disabled_count} disabled)")
+    if len(modules) != 70 or enabled_count != 55 or disabled_count != 15:
+        fail(f"Expected 70 modules (55 enabled, 15 initially disabled), got {len(modules)} ({enabled_count} enabled, {disabled_count} disabled)")
     if set(ids) != set(lock_modules):
         missing = sorted(set(ids) - set(lock_modules))
         extra = sorted(set(lock_modules) - set(ids))
@@ -372,6 +372,7 @@ def check() -> tuple[dict, dict]:
     master_count, default_count, no_master_count = check_config_mapping(manifest, lock)
     additional_count = check_additional_settings_mapping(manifest, lock)
     package_edit_count = len(load_config_edits())
+    package_overrides = check_package_edit_audit(manifest, lock)
     core_defaults_status = check_core_defaults_mapping(lock)
     default_source_count = len(select_modules(modules))
     print(
@@ -386,8 +387,87 @@ def check() -> tuple[dict, dict]:
     print(
         f"Additional settings valid: {additional_count} reviewed module defaults; core authserver/worldserver config status={core_defaults_status}."
     )
-    print(f"Package config edit map valid: {package_edit_count} editable active-config settings.")
+    override_note = (
+        f" (upstream-default overrides: {', '.join(sorted(package_overrides))})" if package_overrides else ""
+    )
+    print(
+        f"Package config edit map valid: {package_edit_count} editable active-config settings{override_note}."
+    )
     return manifest, lock
+
+
+def _canonical(value: str) -> str:
+    text = str(value).strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in {'"', "'"}:
+        return text
+    if text.casefold() in {"true", "false"}:
+        return text.casefold()
+    return text
+
+
+PORTABLE_CORE_KEYS = {
+    "authserver.conf": {"LogsDir", "SourceDirectory", "MySQLExecutable", "TempDir"},
+    "worldserver.conf": {"DataDir", "LogsDir", "TempDir", "SourceDirectory", "MySQLExecutable"},
+}
+
+
+def check_package_edit_audit(manifest: dict, lock: dict) -> list[str]:
+    """Keep the shipped package edits inside the audited configuration policy.
+
+    The package map is what actually reaches a user's `.conf`, so a typo or a
+    stale value here silently ships a wrong server configuration. Every module
+    master switch must therefore resolve to one of its three audited values, and
+    any deviation from modules.manifest.json must be the upstream default, which
+    is the only reviewed override form.
+    """
+    switches = load_json(SWITCHES_PATH)["modules"]
+    modules = {module["id"]: module for module in manifest["modules"]}
+
+    by_runtime = {}
+    for module_id, entry in switches.items():
+        switch = entry.get("switch")
+        if switch and entry.get("runtime_config"):
+            by_runtime[f"modules/{entry['runtime_config']}"] = (module_id, switch)
+
+    overrides: list[str] = []
+    for edit in load_config_edits():
+        if edit.relative_file in PORTABLE_CORE_KEYS:
+            if edit.key not in PORTABLE_CORE_KEYS[edit.relative_file]:
+                fail(f"Unexpected packaged core setting {edit.relative_file}: {edit.key}")
+            if not (edit.value.startswith('"') and edit.value.endswith('"')):
+                fail(
+                    f"{edit.relative_file}: {edit.key} must be a quoted relative path, got {edit.value!r}; "
+                    "the packaged core templates declare these as strings"
+                )
+            continue
+
+        target = by_runtime.get(edit.relative_file)
+        if target is None:
+            continue
+        module_id, switch = target
+        if edit.key != switch["key"]:
+            continue
+
+        audited = {_canonical(switch["upstream_default"])}
+        for field in ("enabled_value", "disabled_value"):
+            if switch.get(field) is not None:
+                audited.add(_canonical(switch[field]))
+        if _canonical(edit.value) not in audited:
+            fail(
+                f"{edit.relative_file}: {edit.key} ships {edit.value!r}, which is not an audited value "
+                f"({', '.join(sorted(audited))})"
+            )
+
+        if "enabled_value" in switch and "disabled_value" in switch:
+            policy = switch["enabled_value"] if modules[module_id]["enabled"] else switch["disabled_value"]
+            if _canonical(edit.value) != _canonical(policy):
+                if _canonical(edit.value) != _canonical(switch["upstream_default"]):
+                    fail(
+                        f"{edit.relative_file}: {edit.key} ships {edit.value!r} but the manifest policy is "
+                        f"{policy!r}; a deviation must ship the audited upstream default"
+                    )
+                overrides.append(f"{module_id}:{edit.key}={edit.value}")
+    return overrides
 
 
 def main() -> int:

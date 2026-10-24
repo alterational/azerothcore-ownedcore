@@ -1,103 +1,213 @@
 {
   "schema_version": 1,
-  "description": "Edits applied only to active .conf copies in the Windows runtime package. The source .conf.dist files remain byte-for-byte unchanged. Paths are relative to the package etc/ directory.",
+  "description": "Edits applied only to the generated active .conf copies in the Windows runtime package. Source .conf.dist templates are never modified and ship byte-for-byte as pinned upstream. Paths are relative to the package configs/ directory. Module master-switch values here are the reviewed shipped state; where they differ from modules.manifest.json the value is the audited upstream default, and validate_project.py reports every such override.",
   "configs": {
-    "authserver.conf": [],
-    "worldserver.conf": [],
-    "modules/AutoRevive.conf": [
-      {"key": "AutoRevive.Enable", "value": "0"}
-    ],
-    "modules/bgqueuechecker.conf": [
-      {"key": "BGQueueChecker.Enable", "value": "0"}
-    ],
-    "modules/breakingnews.conf": [
-      {"key": "BreakingNews.Enable", "value": "0"}
+    "authserver.conf": [
+      {
+        "key": "LogsDir",
+        "value": "\"logs\""
+      },
+      {
+        "key": "SourceDirectory",
+        "value": "\"source/azerothCore\""
+      },
+      {
+        "key": "MySQLExecutable",
+        "value": "\"mysql/bin/mysql.exe\""
+      },
+      {
+        "key": "TempDir",
+        "value": "\"temp\""
+      }
     ],
     "modules/CFBG.conf": [
-      {"key": "CFBG.Enable", "value": "1"}
+      {
+        "key": "CFBG.Enable",
+        "value": "1"
+      }
     ],
-    "modules/challenge_modes.conf": [
-      {"key": "ChallengeModes.Enable", "value": "0"}
+    "modules/bgqueuechecker.conf": [
+      {
+        "key": "BGQueueChecker.Enable",
+        "value": "0"
+      }
     ],
-    "modules/dynamicxp.conf": [
-      {"key": "Dynamic.XP.Rate", "value": "0"},
-      {"key": "Dynamic.XP.Rate.Announce", "value": "0"}
+    "modules/breakingnews.conf": [
+      {
+        "key": "BreakingNews.Enable",
+        "value": "0"
+      }
     ],
     "modules/leech.conf": [
-      {"key": "Leech.Enable", "value": "0"}
-    ],
-    "modules/mod_account_mount.conf": [
-      {"key": "Account.Mounts.Enable", "value": "0"}
+      {
+        "key": "Leech.Enable",
+        "value": "0"
+      }
     ],
     "modules/mod-time_is_time.conf": [
-      {"key": "TimeIsTime.SpeedRate", "value": "1.0"}
+      {
+        "key": "TimeIsTime.SpeedRate",
+        "value": "1.0"
+      }
+    ],
+    "modules/mod_account_mount.conf": [
+      {
+        "key": "Account.Mounts.Enable",
+        "value": "0"
+      }
     ],
     "modules/mod_achievements.conf": [
-      {"key": "Account.Achievements.Announce", "value": "0"},
-      {"key": "Account.Achievements.Enable", "value": "0"}
+      {
+        "key": "Account.Achievements.Announce",
+        "value": "0"
+      }
     ],
     "modules/mod_ahbot.conf": [
-      {"key": "AuctionHouseBot.EnableSeller", "value": "1"},
-      {"key": "AuctionHouseBot.ItemsPerCycle", "value": "100"}
+      {
+        "key": "AuctionHouseBot.EnableSeller",
+        "value": "1"
+      },
+      {
+        "key": "AuctionHouseBot.ItemsPerCycle",
+        "value": "100"
+      }
     ],
     "modules/mod_aoe_loot.conf": [
-      {"key": "AOELoot.Enable", "value": "1"}
+      {
+        "key": "AOELoot.Enable",
+        "value": "1"
+      }
     ],
     "modules/mod_dead_means_dead.conf": [
-      {"key": "DeadMeansDead.RespawnTime.Multiplier.Dungeons", "value": "0.0"},
-      {"key": "DeadMeansDead.RespawnTime.Multiplier.Global", "value": "1.0"},
-      {"key": "DeadMeansDead.RespawnTime.Multiplier.Raids", "value": "0.0"}
-    ],
-    "modules/mod_dynamic_loot_rates.conf": [
-      {"key": "DynamicLootRates.Enable", "value": "0"}
-    ],
-    "modules/mod_learnspells.conf": [
-      {"key": "LearnSpells.Enable", "value": "0"}
-    ],
-    "modules/mod_moneyforkills.conf": [
-      {"key": "MFK.Enable", "value": "0"}
-    ],
-    "modules/mod_no_hearthstone_cooldown.conf": [
-      {"key": "NoHearthstoneCooldown.Announce", "value": "0"},
-      {"key": "NoHearthstoneCooldown.Enable", "value": "0"}
-    ],
-    "modules/mod_npc_free_professions.conf": [
-      {"key": "NpcFreeProfessions.Enable", "value": "0"}
-    ],
-    "modules/mod_ollama_chat.conf": [
-      {"key": "OllamaChat.Enable", "value": "0"}
-    ],
-    "modules/mod_player_bot_level_brackets.conf": [
-      {"key": "BotLevelBrackets.CheckFrequency", "value": "600"},
-      {"key": "BotLevelBrackets.Enabled", "value": "0"},
-      {"key": "BotLevelBrackets.GuildTrackerUpdateFrequency", "value": "1200"}
-    ],
-    "modules/mod_pvptitles.conf": [
-      {"key": "PvPTitles.Enable", "value": "0"}
-    ],
-    "modules/mod_weather_vibe.conf": [
-      {"key": "WeatherVibe.Debug", "value": "0"}
-    ],
-    "modules/quick_teleport.conf": [
-      {"key": "QuickTeleport.enabled", "value": "false"}
-    ],
-    "modules/random_enchants.conf": [
-      {"key": "RandomEnchants.Enable", "value": "0"}
-    ],
-    "modules/skip_dk_module.conf": [
-      {"key": "Skip.Deathknight.Starter.Announce.enable", "value": "0"},
-      {"key": "Skip.Deathknight.Starter.Enable", "value": "0"}
+      {
+        "key": "DeadMeansDead.RespawnTime.Multiplier.Dungeons",
+        "value": "0.0"
+      },
+      {
+        "key": "DeadMeansDead.RespawnTime.Multiplier.Global",
+        "value": "1.0"
+      },
+      {
+        "key": "DeadMeansDead.RespawnTime.Multiplier.Raids",
+        "value": "0.0"
+      }
     ],
     "modules/mod_dungeon_clear.conf": [
-      {"key": "DungeonClear.Enable", "value": "0"}
+      {
+        "key": "DungeonClear.Enable",
+        "value": "1"
+      }
+    ],
+    "modules/mod_moneyforkills.conf": [
+      {
+        "key": "MFK.Enable",
+        "value": "0"
+      }
+    ],
+    "modules/mod_no_hearthstone_cooldown.conf": [
+      {
+        "key": "NoHearthstoneCooldown.Enable",
+        "value": "0"
+      },
+      {
+        "key": "NoHearthstoneCooldown.Announce",
+        "value": "0"
+      }
+    ],
+    "modules/mod_npc_free_professions.conf": [
+      {
+        "key": "NpcFreeProfessions.Enable",
+        "value": "0"
+      }
+    ],
+    "modules/mod_ollama_chat.conf": [
+      {
+        "key": "OllamaChat.Enable",
+        "value": "0"
+      }
+    ],
+    "modules/mod_player_bot_level_brackets.conf": [
+      {
+        "key": "BotLevelBrackets.Enabled",
+        "value": "0"
+      },
+      {
+        "key": "BotLevelBrackets.CheckFrequency",
+        "value": "600"
+      },
+      {
+        "key": "BotLevelBrackets.GuildTrackerUpdateFrequency",
+        "value": "1200"
+      }
+    ],
+    "modules/mod_pvp_zones.conf": [
+      {
+        "key": "pvp_zones.Enable",
+        "value": "0"
+      }
+    ],
+    "modules/mod_pvptitles.conf": [
+      {
+        "key": "PvPTitles.Enable",
+        "value": "0"
+      }
+    ],
+    "modules/mod_weather_vibe.conf": [
+      {
+        "key": "WeatherVibe.Debug",
+        "value": "0"
+      }
     ],
     "modules/playerbots.conf": [
-      {"key": "Playerbots.RandomClassSpecProb.4.0", "value": "45"},
-      {"key": "Playerbots.RandomClassSpecProb.4.1", "value": "45"},
-      {"key": "Playerbots.RandomClassSpecProb.4.2", "value": "10"},
+      {
+        "key": "Playerbots.RandomClassSpecProb.4.0",
+        "value": "45"
+      },
+      {
+        "key": "Playerbots.RandomClassSpecProb.4.1",
+        "value": "45"
+      },
+      {
+        "key": "Playerbots.RandomClassSpecProb.4.2",
+        "value": "10"
+      },
       {
         "key": "Playerbots.PvpProhibitedAreaIds",
         "value": "\"976,35,392,2268,4161,4010,4317,4312,3649,3887,3958,3724,4080,3938,3754,3786,3973,4085,4086,4087,4088\""
+      }
+    ],
+    "modules/random_enchants.conf": [
+      {
+        "key": "RandomEnchants.Enable",
+        "value": "0"
+      }
+    ],
+    "modules/skip_dk_module.conf": [
+      {
+        "key": "Skip.Deathknight.Starter.Enable",
+        "value": "0"
+      }
+    ],
+    "worldserver.conf": [
+      {
+        "key": "DataDir",
+        "value": "\"data\""
+      },
+      {
+        "key": "LogsDir",
+        "value": "\"logs\""
+      },
+      {
+        "key": "TempDir",
+        "value": "\"temp\""
+      },
+      {
+        "key": "SourceDirectory",
+        "value": "\"source/azerothCore\""
+      },
+      {
+        "key": "MySQLExecutable",
+        "value": "\"mysql/bin/mysql.exe\""
       }
     ]
   }

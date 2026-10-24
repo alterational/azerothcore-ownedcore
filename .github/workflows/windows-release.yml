@@ -2,7 +2,7 @@ name: Windows runtime build
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, rebuild-897a41c]
   push:
     branches: [main]
     tags: ["v*"]
@@ -31,7 +31,7 @@ jobs:
       include_individual_progression: ${{ steps.build-variant.outputs.include_individual_progression }}
       artifact_name: ${{ steps.build-variant.outputs.artifact_name }}
     env:
-      BOOST_ROOT: C:\local\boost_1_87_0
+      BOOST_ROOT: C:\local\boost_1_92_0
       CMAKE_GENERATOR: Ninja
       CTOOLS_BUILD: none
       CMODULES: static
@@ -83,29 +83,75 @@ jobs:
         uses: actions/cache@v6
         with:
           path: |
-            C:\local\boost_1_87_0
+            C:\local\boost_1_92_0
             C:\tools\mysql\current
-          key: winbuild-deps-boost-1.87.0-mysql-8.4.9
+          key: winbuild-deps-boost-1.92.0-msvc14.3-mysql-8.4.7
 
       - name: Configure Windows dependencies
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          $boostRoot = 'C:\local\boost_1_92_0'
+          $boostVersion = '1.92.0'
+          $mysqlRoot = 'C:\tools\mysql\current'
+          $mysqlVersion = '8.4.7'
 
-          if (-not (Test-Path 'C:\local\boost_1_87_0\boost\version.hpp')) {
-            $boostExe = Join-Path $env:RUNNER_TEMP 'boost.exe'
-            $boostUrl = 'https://downloads.sourceforge.net/project/boost/boost-binaries/1.87.0/boost_1_87_0-msvc-14.3-64.exe'
-            $request = @{
-              Uri = $boostUrl
-              OutFile = $boostExe
-              UserAgent = 'azerothcore-ci'
-              ConnectionTimeoutSeconds = 60
-              OperationTimeoutSeconds = 60
+          function Test-BoostInstall {
+            param([string]$Root, [string]$Version)
+            $header = Join-Path $Root 'boost\version.hpp'
+            if (-not (Test-Path $header)) { return $false }
+            $text = Get-Content -Raw -LiteralPath $header
+            if ($text -notmatch '#define\s+BOOST_VERSION\s+109200\b') { return $false }
+            if ($text -notmatch '#define\s+BOOST_LIB_VERSION\s+"1_92"') { return $false }
+            return (Test-Path (Join-Path $Root 'lib64-msvc-14.3'))
+          }
+
+          function Get-MySqlVersionIdFor {
+            param([string]$Version)
+            $parts = $Version.Split('.') | ForEach-Object { [int]$_ }
+            return [string]($parts[0] * 10000 + $parts[1] * 100 + $parts[2])
+          }
+
+          function Get-MySqlHeaderVersionId {
+            param([string]$Root)
+            $header = Join-Path $Root 'include\mysql_version.h'
+            if (-not (Test-Path $header)) { return $null }
+            $text = Get-Content -Raw -LiteralPath $header
+            $match = [regex]::Match($text, '(?m)^\s*#\s*define\s+\w*VERSION_ID\s+(\d+)\b')
+            if ($match.Success) { return $match.Groups[1].Value }
+            return $null
+          }
+
+          function Test-LibmysqlVersion {
+            param([string]$Root, [string]$Version)
+            $dll = Join-Path $Root 'lib\libmysql.dll'
+            if (-not (Test-Path $dll)) { return $false }
+            $info = (Get-Item -LiteralPath $dll).VersionInfo
+            return (($info.FileVersion -like "$Version*") -or ($info.ProductVersion -like "$Version*"))
+          }
+
+          function Test-MySqlInstall {
+            param([string]$Root, [string]$Version)
+            $marker = Join-Path $Root '.mysql-version'
+            if (-not (Test-Path $marker)) { return $false }
+            if (((Get-Content -Raw -LiteralPath $marker).Trim()) -ne $Version) { return $false }
+            foreach ($relative in @('include\mysql.h', 'include\mysql_version.h', 'lib\libmysql.lib', 'lib\libmysql.dll', 'bin\mysql.exe', 'bin\mysqld.exe')) {
+              if (-not (Test-Path (Join-Path $Root $relative))) { return $false }
             }
+            if ((Get-MySqlHeaderVersionId -Root $Root) -ne (Get-MySqlVersionIdFor -Version $Version)) { return $false }
+            return (Test-LibmysqlVersion -Root $Root -Version $Version)
+          }
+
+          if (-not (Test-BoostInstall -Root $boostRoot -Version $boostVersion)) {
+            if (Test-Path $boostRoot) { Remove-Item -Recurse -Force $boostRoot }
+            $boostFileName = 'boost_1_92_0-msvc-14.3-64.exe'
+            $boostUrl = "https://archives.boost.io/release/$boostVersion/binaries/$boostFileName"
+            $boostSha256 = '90db7bdf26ad34a670fcf5b43c95c5253252098de01402cd758df8e801c383b3'
+            $boostExe = Join-Path $env:RUNNER_TEMP $boostFileName
             $attempts = 3
             for ($attempt = 1; $attempt -le $attempts; $attempt++) {
               try {
-                Invoke-WebRequest @request
+                Invoke-WebRequest -Uri $boostUrl -OutFile $boostExe -UserAgent 'azerothcore-ci' -ConnectionTimeoutSeconds 60 -OperationTimeoutSeconds 180
                 $sizeMB = (Get-Item $boostExe).Length / 1MB
                 if ($sizeMB -lt 50) { throw "Boost download is only $([int]$sizeMB) MB." }
                 break
@@ -116,22 +162,65 @@ jobs:
                 Start-Sleep -Seconds 15
               }
             }
-            $proc = Start-Process -FilePath $boostExe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/DIR=C:\local\boost_1_87_0' -Wait -PassThru
+            $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $boostExe).Hash.ToLowerInvariant()
+            if ($actualHash -ne $boostSha256) {
+              throw "Boost installer SHA-256 mismatch: expected $boostSha256, got $actualHash."
+            }
+            $proc = Start-Process -FilePath $boostExe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$boostRoot" -Wait -PassThru
             if ($proc.ExitCode -ne 0) { throw "Boost installer failed with exit code $($proc.ExitCode)." }
           }
-          if (-not (Test-Path 'C:\local\boost_1_87_0\lib64-msvc-14.3')) { throw 'Boost MSVC 14.3 libraries are missing.' }
+          if (-not (Test-BoostInstall -Root $boostRoot -Version $boostVersion)) {
+            throw 'Boost 1.92.0 (MSVC 14.3 x64) is missing or incomplete after provisioning.'
+          }
 
-          if (-not (Test-Path 'C:\tools\mysql\current\lib\mysqlclient.lib')) {
-            $mysqlZip = Join-Path $env:RUNNER_TEMP 'mysql.zip'
-            Invoke-WebRequest -Uri 'https://cdn.mysql.com/archives/mysql-8.4/mysql-8.4.9-winx64.zip' -OutFile $mysqlZip -UserAgent 'Mozilla/5.0'
-            $sizeMB = (Get-Item $mysqlZip).Length / 1MB
-            if ($sizeMB -lt 50) { throw "MySQL archive download is only $([int]$sizeMB) MB." }
+          if (-not (Test-MySqlInstall -Root $mysqlRoot -Version $mysqlVersion)) {
+            Write-Host "Provisioning MySQL $mysqlVersion because the cached tree failed the version gate."
+            if (Test-Path $mysqlRoot) { Remove-Item -Recurse -Force $mysqlRoot }
+            $extractedRoot = Join-Path 'C:\tools\mysql' "mysql-$mysqlVersion-winx64"
+            if (Test-Path $extractedRoot) { Remove-Item -Recurse -Force $extractedRoot }
+            $mysqlZip = Join-Path $env:RUNNER_TEMP "mysql-$mysqlVersion-winx64.zip"
+            $mysqlUrl = "https://cdn.mysql.com/archives/mysql-8.4/mysql-$mysqlVersion-winx64.zip"
+            $attempts = 3
+            for ($attempt = 1; $attempt -le $attempts; $attempt++) {
+              try {
+                Invoke-WebRequest -Uri $mysqlUrl -OutFile $mysqlZip -UserAgent 'Mozilla/5.0' -ConnectionTimeoutSeconds 60 -OperationTimeoutSeconds 300
+                $sizeMB = (Get-Item $mysqlZip).Length / 1MB
+                if ($sizeMB -lt 50) { throw "MySQL archive download is only $([int]$sizeMB) MB." }
+                break
+              }
+              catch {
+                Write-Host "MySQL download attempt $attempt failed: $($_.Exception.Message)"
+                if ($attempt -eq $attempts) { throw }
+                Start-Sleep -Seconds 15
+              }
+            }
             New-Item -ItemType Directory -Force -Path 'C:\tools\mysql' | Out-Null
             Expand-Archive -Path $mysqlZip -DestinationPath 'C:\tools\mysql' -Force
-            if (Test-Path 'C:\tools\mysql\current') { Remove-Item -Recurse -Force 'C:\tools\mysql\current' }
-            Rename-Item 'C:\tools\mysql\mysql-8.4.9-winx64' 'C:\tools\mysql\current'
+            if (-not (Test-Path $extractedRoot)) { throw "MySQL archive did not extract to $extractedRoot." }
+            Move-Item -LiteralPath $extractedRoot -Destination $mysqlRoot
+            Set-Content -LiteralPath (Join-Path $mysqlRoot '.mysql-version') -Value $mysqlVersion -Encoding ascii -NoNewline
           }
-          if (-not (Test-Path 'C:\tools\mysql\current\lib\mysqlclient.lib')) { throw 'MySQL client import library is missing.' }
+
+          $markerPath = Join-Path $mysqlRoot '.mysql-version'
+          $markerText = if (Test-Path $markerPath) { (Get-Content -Raw -LiteralPath $markerPath).Trim() } else { '' }
+          if ($markerText -ne $mysqlVersion) {
+            throw "MySQL version marker at $markerPath is '$markerText', expected '$mysqlVersion'."
+          }
+          $expectedVersionId = Get-MySqlVersionIdFor -Version $mysqlVersion
+          $headerVersionId = Get-MySqlHeaderVersionId -Root $mysqlRoot
+          if ($headerVersionId -ne $expectedVersionId) {
+            throw "include\mysql_version.h reports version ID '$headerVersionId', expected '$expectedVersionId'."
+          }
+          if (-not (Test-LibmysqlVersion -Root $mysqlRoot -Version $mysqlVersion)) {
+            $info = (Get-Item -LiteralPath (Join-Path $mysqlRoot 'lib\libmysql.dll')).VersionInfo
+            throw "lib\libmysql.dll reports version '$($info.FileVersion)/$($info.ProductVersion)', expected $mysqlVersion."
+          }
+          foreach ($relative in @('lib\libmysql.lib', 'lib\libmysql.dll', 'bin\mysql.exe', 'bin\mysqld.exe')) {
+            if (-not (Test-Path (Join-Path $mysqlRoot $relative))) { throw "Required MySQL file is missing: $relative." }
+          }
+          if (Test-Path (Join-Path $mysqlRoot 'lib\mysqlclient.lib')) {
+            Write-Host 'The portable MySQL tree also ships lib\mysqlclient.lib; this dynamic build selects lib\libmysql.lib.'
+          }
 
           $opensslRoot = @($env:OPENSSL_ROOT_DIR, 'C:\Program Files\OpenSSL', 'C:\Program Files\OpenSSL-Win64') |
             Where-Object { $_ -and (Test-Path (Join-Path $_ 'include\openssl\opensslv.h')) } |
@@ -152,24 +241,182 @@ jobs:
           if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) { throw 'Ninja is unavailable after installation.' }
           ninja --version
 
+          $mysqlDllInfo = (Get-Item -LiteralPath (Join-Path $mysqlRoot 'lib\libmysql.dll')).VersionInfo
+          @(
+            '### Windows dependency selection',
+            '',
+            "- Boost $boostVersion from '$boostRoot' (lib64-msvc-14.3, SHA-256 verified installer)",
+            "- MySQL $mysqlVersion from '$mysqlRoot' (marker '$markerText', header version ID '$headerVersionId', libmysql.dll '$($mysqlDllInfo.FileVersion)')",
+            "- OpenSSL root '$opensslRoot' (existing runner install, junctioned to C:\openssl)",
+            '- Build type RelWithDebInfo; Ninja/MSVC; dynamic libmysql.lib'
+          ) | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+      - name: Select the MSVC 14.3-generation toolset
+        id: msvc-toolset
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Boost 1.92.0 auto-link names the toolset from _MSC_VER: anything below
+          # 1950 asks for vc143, which is exactly what the prebuilt MSVC 14.3 x64
+          # package provides. Newer images default to a 14.5x compiler, so select
+          # a 14.3/14.4 generation toolset when one is installed.
+          $installRoots = @(
+            'C:\Program Files\Microsoft Visual Studio',
+            'C:\Program Files (x86)\Microsoft Visual Studio'
+          ) | Where-Object { Test-Path $_ }
+          $installed = @()
+          foreach ($root in $installRoots) {
+            $installed += Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue |
+              ForEach-Object {
+                $msvcRoot = Join-Path $_.FullName 'VC\Tools\MSVC'
+                if (Test-Path $msvcRoot) {
+                  Get-ChildItem -LiteralPath $msvcRoot -Directory -ErrorAction SilentlyContinue
+                }
+              }
+          }
+          $versions = $installed | ForEach-Object { $_.Name } | Sort-Object -Unique
+          Write-Host "Installed MSVC toolsets: $($versions -join ', ')"
+          Write-Host "::notice title=MSVC toolsets installed::$($versions -join ', ')"
+          $preferred = @($versions | Where-Object { $_ -match '^14\.3\.' })
+          if (-not $preferred) { $preferred = @($versions | Where-Object { $_ -match '^14\.4\.' }) }
+          if ($preferred) {
+            $selected = @($preferred | Sort-Object { [version]($_ -replace '^([0-9]+\.[0-9]+).*$', '$1') } -Descending)[0]
+          }
+          else {
+            $selected = ''
+            Write-Warning 'No 14.3/14.4 MSVC toolset is installed; the default toolset will be used and Boost auto-linking is disabled so the MSVC 14.3 libraries still link.'
+            Write-Host "::warning title=MSVC toolset::No 14.3/14.4 toolset installed (found: $($versions -join ', ')); using the default compiler with BOOST_ALL_NO_LIB."
+          }
+          Write-Host "::notice title=MSVC toolset selected::$(if ($selected) { $selected } else { '<default>' })"
+          "toolset=$selected" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          $line = if ($selected) { "- MSVC toolset: '$selected' (vc143-generation, matching the Boost 1.92.0 MSVC 14.3 x64 libraries)" } else { '- MSVC toolset: default image toolset (Boost auto-linking disabled)' }
+          $line | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
         with:
           arch: x64
+          toolset: ${{ steps.msvc-toolset.outputs.toolset }}
+
+      - name: Verify Boost linking with the selected toolset
+        shell: pwsh
+        run: |
+          $boostRoot = 'C:\local\boost_1_92_0'
+          $boostLibDir = Join-Path $boostRoot 'lib64-msvc-14.3'
+          Write-Host "VCToolsVersion: $env:VCToolsVersion"
+
+          $clCommand = Get-Command cl -ErrorAction SilentlyContinue
+          if (-not $clCommand) {
+            Write-Host "::error title=MSVC toolset::cl.exe is not on PATH (VCToolsVersion '$env:VCToolsVersion')."
+            throw 'cl.exe is not available after the MSVC setup step.'
+          }
+          $clVersion = ((& cl 2>&1 | Select-Object -First 1) -join ' ').Trim()
+          Write-Host "::notice title=MSVC compiler::$clVersion | cl=$($clCommand.Source) | VCToolsVersion=$env:VCToolsVersion"
+          Write-Host "Compiler: $clVersion"
+
+          # The headers otherwise auto-link `-vc145-` names on newer compilers,
+          # which the MSVC 14.3 Boost package does not contain.
+          $env:CL = '-DBOOST_ALL_NO_LIB'
+          $probeSource = Join-Path $env:RUNNER_TEMP 'boost_probe.cpp'
+          $probeObject = Join-Path $env:RUNNER_TEMP 'boost_probe.obj'
+          $probeBinary = Join-Path $env:RUNNER_TEMP 'boost_probe.exe'
+          @(
+            '#include <boost/version.hpp>',
+            '#include <boost/program_options.hpp>',
+            '#include <iostream>',
+            'int main() {',
+            '    boost::program_options::options_description description("probe");',
+            '    std::cout << BOOST_LIB_VERSION << "\n";',
+            '    return 0;',
+            '}'
+          ) | Set-Content -Path $probeSource -Encoding ascii
+
+          # /MD matches the core's RelWithDebInfo MSVC runtime; raw cl defaults to
+          # the static /MT runtime, which cannot be mixed with Boost's /MD build.
+          $probeOutput = & cl /nologo /MD /EHsc /std:c++20 "/I$boostRoot" "/Fo$probeObject" "/Fe$probeBinary" $probeSource `
+            /link "/LIBPATH:$boostLibDir" libboost_program_options-vc143-mt-x64-1_92.lib 2>&1 | Out-String
+          $probeExit = $LASTEXITCODE
+          Write-Host $probeOutput
+          if ($probeExit -ne 0) {
+            $lines = ($probeOutput -split "`r?`n") | Where-Object { $_ }
+            $problems = $lines | Where-Object { $_ -match 'error|fatal|LNK[12][0-9]{3}' } | Select-Object -Last 12
+            if (-not $problems) { $problems = $lines | Select-Object -Last 12 }
+            $details = ($problems -join ' | ')
+            Write-Host "::error title=Boost probe link failure::exit=$probeExit :: $details"
+            throw 'The Boost probe failed to compile/link; the selected toolset cannot use the MSVC 14.3 Boost libraries.'
+          }
+
+          $runOutput = (& $probeBinary 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error title=Boost probe run failure::exit=$LASTEXITCODE :: $runOutput"
+            throw 'The compiled Boost probe did not run.'
+          }
+          Write-Host "::notice title=Boost probe::linked and ran against the MSVC 14.3 libraries (BOOST_LIB_VERSION $runOutput, VCToolsVersion $env:VCToolsVersion)"
+          "Boost probe linked against the MSVC 14.3 libraries with VCToolsVersion '$env:VCToolsVersion'." |
+            Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+      - name: Require a clean build directory
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $buildDir = 'core\var\build\obj'
+          if (Test-Path $buildDir) {
+            Write-Host "Removing a pre-existing build directory at $buildDir."
+            Remove-Item -Recurse -Force $buildDir
+          }
+          if (Test-Path $buildDir) { throw "The build directory $buildDir still exists; refusing to reuse a stale CMake cache." }
+          Write-Host "::notice title=Build directory::clean; $buildDir does not exist before configuration."
+          'Build directory is clean before configuration.' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
       - name: Configure AzerothCore for Windows
         shell: pwsh
         run: |
-          @'
-          CCOMPILERC="cl"
-          CCOMPILERCXX="cl"
-          CTYPE="Release"
-          CSCRIPTS="static"
-          CMODULES="static"
-          CTOOLS_BUILD="none"
-          CCUSTOMOPTIONS="-DBOOST_ROOT=C:/local/boost_1_87_0 -DOPENSSL_ROOT_DIR=C:/openssl -DOPENSSL_USE_STATIC_LIBS=FALSE -DCMAKE_RC_COMPILER=rc -DCMAKE_NINJA_FORCE_RESPONSE_FILE=ON -DCMAKE_NINJA_CMCLDEPS_RC=OFF -DCMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS=ON -DCMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS=ON -DCMAKE_C_USE_RESPONSE_FILE_FOR_INCLUDES=ON -DCMAKE_CXX_USE_RESPONSE_FILE_FOR_INCLUDES=ON -DCMAKE_C_USE_RESPONSE_FILE_FOR_LIBRARIES=ON -DCMAKE_CXX_USE_RESPONSE_FILE_FOR_LIBRARIES=ON"
-          '@ | Set-Content -Path 'core/conf/config.sh' -Encoding ascii
-          Get-Content 'core/conf/config.sh'
+          $customOptions = @(
+            '-DBOOST_ROOT=C:/local/boost_1_92_0',
+            '-DOPENSSL_ROOT_DIR=C:/openssl',
+            '-DOPENSSL_USE_STATIC_LIBS=FALSE',
+            '-DCMAKE_RC_COMPILER=rc',
+            '-DCMAKE_NINJA_FORCE_RESPONSE_FILE=ON',
+            '-DCMAKE_NINJA_CMCLDEPS_RC=OFF',
+            '-DCMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS=ON',
+            '-DCMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS=ON',
+            '-DCMAKE_C_USE_RESPONSE_FILE_FOR_INCLUDES=ON',
+            '-DCMAKE_CXX_USE_RESPONSE_FILE_FOR_INCLUDES=ON',
+            '-DCMAKE_C_USE_RESPONSE_FILE_FOR_LIBRARIES=ON',
+            '-DCMAKE_CXX_USE_RESPONSE_FILE_FOR_LIBRARIES=ON',
+            '-DMYSQL_ROOT_DIR=C:/tools/mysql/current',
+            '-DMYSQL_INCLUDE_DIR=C:/tools/mysql/current/include',
+            '-DMYSQL_LIBRARY=C:/tools/mysql/current/lib/libmysql.lib',
+            '-DMYSQL_EXECUTABLE=C:/tools/mysql/current/bin/mysql.exe'
+          ) -join ' '
+          $config = @(
+            'CCOMPILERC="cl"',
+            'CCOMPILERCXX="cl"',
+            'CTYPE="RelWithDebInfo"',
+            'CSCRIPTS="static"',
+            'CMODULES="static"',
+            'CTOOLS_BUILD="none"',
+            "CCUSTOMOPTIONS=`"$customOptions`""
+          )
+          # Write LF endings explicitly: bash sources this file, and CRLF would
+          # contaminate CTYPE and every CCUSTOMOPTIONS value.
+          $configPath = Join-Path $env:GITHUB_WORKSPACE 'core/conf/config.sh'
+          [System.IO.File]::WriteAllText($configPath, (($config -join "`n") + "`n"), [System.Text.Encoding]::ASCII)
+          Get-Content $configPath
+
+          $written = Get-Content -Raw 'core/conf/config.sh'
+          foreach ($required in @(
+            'CTYPE="RelWithDebInfo"',
+            '-DBOOST_ROOT=C:/local/boost_1_92_0',
+            '-DMYSQL_ROOT_DIR=C:/tools/mysql/current',
+            '-DMYSQL_INCLUDE_DIR=C:/tools/mysql/current/include',
+            '-DMYSQL_LIBRARY=C:/tools/mysql/current/lib/libmysql.lib',
+            '-DMYSQL_EXECUTABLE=C:/tools/mysql/current/bin/mysql.exe'
+          )) {
+            if (-not $written.Contains($required)) { throw "core/conf/config.sh is missing $required." }
+          }
+          if ($written.Contains('CTYPE="Release"')) { throw 'core/conf/config.sh still selects the Release build type.' }
+          if ($written.Contains('mysqlclient.lib')) { throw 'core/conf/config.sh still selects the static MySQL client library.' }
 
       - name: Use a short path for the Windows build
         shell: pwsh
@@ -195,6 +442,13 @@ jobs:
           CC: cl
           CXX: cl
           RC: rc
+          # Boost headers auto-link a name derived from _MSC_VER. The prebuilt
+          # Boost 1.92.0 package only ships the MSVC 14.3 (`vc143`) libraries, so
+          # let the explicit CMake Boost libraries be authoritative instead of
+          # asking the linker for a `vc145` import library that does not exist.
+          # The `-D` spelling is required here: MSYS rewrites a leading `/` option
+          # into a Windows path before cl ever sees it.
+          CL: -DBOOST_ALL_NO_LIB
         run: |
           cd /z
           printf 'Short build root: %s\n' "$(pwd -W)"
@@ -216,6 +470,112 @@ jobs:
             printf '::error title=Windows install output::%s\n' "$message"
             exit 1
           done
+
+      - name: Verify CMake dependency selection
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Fail-Check {
+            param([string]$Title, [string]$Message)
+            Write-Host "::error title=$Title::$Message"
+            throw $Message
+          }
+
+          $cachePath = 'core\var\build\obj\CMakeCache.txt'
+          if (-not (Test-Path $cachePath)) { Fail-Check 'CMake cache' "CMake cache was not found at $cachePath." }
+          $lines = Get-Content -LiteralPath $cachePath
+
+          function Assert-CacheValue {
+            param([string[]]$Lines, [string]$Key, [string]$Value)
+            $pattern = '^' + [regex]::Escape($Key) + ':[^=]*=' + [regex]::Escape($Value) + '$'
+            if (-not ($Lines | Where-Object { $_ -match $pattern })) {
+              $actual = ($Lines | Where-Object { $_ -match ('^' + [regex]::Escape($Key) + ':') }) -join '; '
+              Fail-Check 'CMake cache' "CMake cache does not select ${Key}=${Value}. Actual: $actual"
+            }
+          }
+
+          Assert-CacheValue -Lines $lines -Key 'CMAKE_BUILD_TYPE' -Value 'RelWithDebInfo'
+          Assert-CacheValue -Lines $lines -Key 'MYSQL_INCLUDE_DIR' -Value 'C:/tools/mysql/current/include'
+          Assert-CacheValue -Lines $lines -Key 'MYSQL_LIBRARY' -Value 'C:/tools/mysql/current/lib/libmysql.lib'
+          Assert-CacheValue -Lines $lines -Key 'MYSQL_EXECUTABLE' -Value 'C:/tools/mysql/current/bin/mysql.exe'
+          if ($lines | Where-Object { $_ -match '^MYSQL_ROOT_DIR:' }) {
+            Assert-CacheValue -Lines $lines -Key 'MYSQL_ROOT_DIR' -Value 'C:/tools/mysql/current'
+          }
+          else {
+            Write-Warning 'MYSQL_ROOT_DIR was not cached by this core revision; the explicit include/library/executable entries are verified.'
+          }
+
+          if (-not ($lines | Where-Object { $_ -match 'boost_1_92_0' })) {
+            Fail-Check 'CMake cache' 'The CMake cache does not reference C:/local/boost_1_92_0.'
+          }
+          if ($lines | Where-Object { $_ -match 'boost_1_87' }) {
+            Fail-Check 'CMake cache' 'The CMake cache still references Boost 1.87.'
+          }
+          if ($lines | Where-Object { $_ -match 'mysqlclient\.lib' }) {
+            Fail-Check 'CMake cache' 'The CMake cache still references the static mysqlclient.lib.'
+          }
+          # Only real path variables matter here; the cache also holds internal
+          # bookkeeping such as USE_MYSQL_SOURCES, *-ADVANCED, and
+          # FIND_PACKAGE_MESSAGE_DETAILS_MySQL entries that are not paths.
+          $mysqlPathKeys = '^(MYSQL_ROOT_DIR|MYSQL_INCLUDE_DIR|MYSQL_LIBRARY|MYSQL_EXECUTABLE|MYSQL_CONFIG):'
+          $foreignMysql = $lines | Where-Object { $_ -match $mysqlPathKeys } | Where-Object { $_ -notmatch 'C:/tools/mysql/current' }
+          if ($foreignMysql) {
+            Fail-Check 'CMake cache' "The CMake cache references MySQL outside the gated 8.4.7 tree: $($foreignMysql -join '; ')"
+          }
+
+          # Boost is discovered through its CMake config package, so the selected
+          # libraries appear on the generated link lines rather than as
+          # Boost_*_LIBRARY_RELEASE cache entries.
+          $buildDir = 'core\var\build\obj'
+          $boostPattern = 'libboost_[A-Za-z0-9_\-]+\.lib'
+          $boostLibraries = @()
+          $ninjaPath = Join-Path $buildDir 'build.ninja'
+          if (Test-Path $ninjaPath) {
+            $ninjaText = Get-Content -Raw -LiteralPath $ninjaPath
+            $boostLibraries += [regex]::Matches($ninjaText, $boostPattern) | ForEach-Object { $_.Value }
+          }
+          $scanned = 0
+          if (-not $boostLibraries) {
+            $rspFiles = Get-ChildItem -Path $buildDir -Recurse -File -Filter '*.rsp' -ErrorAction SilentlyContinue
+            foreach ($rsp in $rspFiles) {
+              $scanned++
+              $rspText = Get-Content -Raw -LiteralPath $rsp.FullName -ErrorAction SilentlyContinue
+              if ($rspText -and $rspText -match 'libboost_') {
+                $boostLibraries += [regex]::Matches($rspText, $boostPattern) | ForEach-Object { $_.Value }
+              }
+            }
+          }
+          if (-not $boostLibraries) {
+            # Last resort: any text file in the build tree that names a Boost
+            # library still proves which toolset set CMake selected.
+            $fallbackFiles = Get-ChildItem -Path $buildDir -Recurse -File -ErrorAction SilentlyContinue |
+              Where-Object { $_.Length -lt 4MB }
+            foreach ($file in $fallbackFiles) {
+              $fileText = Get-Content -Raw -LiteralPath $file.FullName -ErrorAction SilentlyContinue
+              if ($fileText -and $fileText -match 'libboost_') {
+                $boostLibraries += [regex]::Matches($fileText, $boostPattern) | ForEach-Object { $_.Value }
+              }
+            }
+          }
+          $boostLibraries = @($boostLibraries | Sort-Object -Unique)
+          if (-not $boostLibraries) {
+            Fail-Check 'Boost libraries' "No Boost import libraries were found anywhere under $buildDir ($scanned response files scanned); cannot confirm the MSVC 14.3 set."
+          }
+          $notVc143 = $boostLibraries | Where-Object { $_ -notmatch '-vc143-' }
+          if ($notVc143) {
+            Fail-Check 'Boost libraries' "The link line does not use the MSVC 14.3 (vc143) Boost set: $($notVc143 -join ', ')"
+          }
+          $compilerVersion = $lines | Where-Object { $_ -match '^CMAKE_CXX_COMPILER_VERSION:' }
+          $cacheSelections = $lines | Where-Object { $_ -match '^(CMAKE_BUILD_TYPE|MYSQL_[A-Z_]+|BOOST_ROOT|Boost_DIR):' }
+          Write-Host "Compiler: $compilerVersion"
+          Write-Host 'Selected Boost libraries:'
+          $boostLibraries | ForEach-Object { Write-Host "  $_" }
+          Write-Host "::notice title=CMake dependency selection::$($cacheSelections -join ' | ') :: boost=$(($boostLibraries) -join ', ')"
+          '### CMake dependency selection' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          $cacheSelections | ForEach-Object { $_ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8 }
+          $boostLibraries | ForEach-Object { "Boost library: $_" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8 }
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
       - name: Surface Windows build errors in the check run
         if: failure() && steps.windows-build.outcome == 'failure'
@@ -251,17 +611,29 @@ jobs:
       - name: Stage Windows runtime DLL dependencies
         shell: pwsh
         run: |
-          $dest = Join-Path $env:GITHUB_WORKSPACE 'core\env\dist'
-          $dependencyDirs = @(
-            'C:\tools\mysql\current\bin',
-            'C:\openssl\bin',
-            'C:\local\boost_1_87_0\lib64-msvc-14.3'
-          )
-          foreach ($directory in $dependencyDirs) {
-            if (Test-Path $directory) {
-              Get-ChildItem -LiteralPath $directory -Filter '*.dll' -File | Copy-Item -Destination $dest -Force
-            }
+          $output = python scripts/stage_windows_runtime_dlls.py `
+            --binary-dir 'core/env/dist' `
+            --mysql-root 'C:\tools\mysql\current' `
+            --openssl-bin-dir 'C:\openssl\bin' `
+            --output-dir 'core/env/runtime-dlls' `
+            --mysql-version '8.4.7' `
+            --dumpbin 'dumpbin' 2>&1 | Tee-Object -Variable output
+          if ($LASTEXITCODE -ne 0) {
+            $details = (($output | ForEach-Object { "$_" }) -join ' | ')
+            Write-Host "::error title=Runtime DLL staging::exit=$LASTEXITCODE :: $details"
+            exit 1
           }
+          $inventoryPath = 'core/env/runtime-dlls.json'
+          if (-not (Test-Path $inventoryPath)) { throw "Runtime DLL inventory was not written to $inventoryPath." }
+          $inventory = Get-Content -Raw -LiteralPath $inventoryPath | ConvertFrom-Json
+          $sources = $inventory.dll_sources.PSObject.Properties | ForEach-Object { "$($_.Name) <- $($_.Value)" }
+          Write-Host "::notice title=Runtime DLLs staged::$($sources -join ' | ')"
+          Write-Host 'Staged runtime DLLs:'
+          $sources | ForEach-Object { Write-Host "  $_" }
+          '### Runtime DLLs staged' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          '```text' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          $sources | ForEach-Object { $_ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8 }
+          '```' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
       - name: Apply and verify installed runtime config
         shell: pwsh
@@ -281,38 +653,77 @@ jobs:
       - name: Package Windows runtime
         if: steps.core-readiness.outputs.ready == 'true'
         shell: pwsh
-        env:
-          INCLUDE_INDIVIDUAL_PROGRESSION: ${{ steps.build-variant.outputs.include_individual_progression }}
         run: |
-          $packageArgs = @('--dist-dir', 'core/env/dist', '--binary-dir', 'core/env/dist', '--config-dir', 'core/env/dist/configs', '--output', 'runtime-package')
-          if ($env:INCLUDE_INDIVIDUAL_PROGRESSION -eq 'true') {
-            $packageArgs += @('--include-module', 'mod-individual-progression')
+          $output = python scripts/package_runtime.py `
+            --dist-dir 'core/env/dist' `
+            --config-dir 'core/env/dist/configs' `
+            --dll-dir 'core/env/runtime-dlls' `
+            --mysql-root 'C:\tools\mysql\current' `
+            --output 'runtime-package' 2>&1 | Tee-Object -Variable output
+          if ($LASTEXITCODE -ne 0) {
+            $details = (($output | ForEach-Object { "$_" }) -join ' | ')
+            Write-Host "::error title=Runtime packaging::exit=$LASTEXITCODE :: $details"
+            exit 1
           }
-          python scripts/package_runtime.py @packageArgs
 
       - name: Upload successful Windows runtime artifact
         if: steps.core-readiness.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.build-variant.outputs.artifact_name }}
-          path: runtime-package/azerothcore-ownedcore-windows.zip
+          path: runtime-package/azerothcore-ownedcore-windows/**
           if-no-files-found: error
           retention-days: 14
 
+  verify-artifact:
+    name: Verify uploaded Windows runtime artifact
+    needs: build
+    if: needs.build.outputs.core_config_ready == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out build repository
+        uses: actions/checkout@v7
+      - name: Download the uploaded Windows runtime artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: artifact-root
+      - name: Verify the artifact root layout
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/verify_package_layout.py --package-root artifact-root | tee -a "$GITHUB_STEP_SUMMARY" | tee /tmp/layout.txt
+          {
+            echo '### Artifact layout'
+            grep -E '^(Package layout valid|Root files|Root DLLs|configs/:|mysql/:|Manifest SHA-256)' /tmp/layout.txt | sed 's/^/  /'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=Artifact layout::$(grep -E '^(Package layout valid|Root DLLs|Manifest SHA-256)' /tmp/layout.txt | tr '\n' ' ')"
+
   release:
     name: Publish version-tagged Windows release
-    needs: build
+    needs: [build, verify-artifact]
     if: startsWith(github.ref, 'refs/tags/v') && needs.build.outputs.core_config_ready == 'true' && needs.build.outputs.include_individual_progression != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
       actions: read
     steps:
+      - name: Check out build repository
+        uses: actions/checkout@v7
       - name: Download successful Windows runtime artifact
         uses: actions/download-artifact@v4
         with:
           name: ${{ needs.build.outputs.artifact_name }}
-          path: release-assets
+          path: release-assets/package-root
+      - name: Assemble the single release ZIP
+        shell: bash
+        run: |
+          python3 scripts/assemble_release_zip.py \
+            --package-root release-assets/package-root \
+            --output release-assets/azerothcore-ownedcore-windows.zip
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:

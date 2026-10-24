@@ -84,11 +84,11 @@ def load_config_edits(path: Path = DEFAULT_CONFIG_EDITS_PATH) -> list[ConfigEdit
     return edits
 
 
-def copy_templates_to_active_configs(etc_dir: Path) -> int:
+def copy_templates_to_active_configs(config_dir: Path) -> int:
     """Create every staged `.conf` as a byte-identical sibling of its `.conf.dist`."""
-    templates = sorted(etc_dir.rglob("*.conf.dist"))
+    templates = sorted(config_dir.rglob("*.conf.dist"))
     if not templates:
-        raise RuntimeError(f"No packaged .conf.dist templates found under {etc_dir}")
+        raise RuntimeError(f"No packaged .conf.dist templates found under {config_dir}")
 
     copied = 0
     for template in templates:
@@ -154,7 +154,7 @@ def _warning(relative_file: str, key: str, current: str, new: str) -> str:
     return f"WARNING: couldn't apply config edit for: {relative_file}, key {key} {current} {new}"
 
 
-def apply_config_edits(etc_dir: Path, edits: list[ConfigEdit]) -> tuple[int, int]:
+def apply_config_edits(config_dir: Path, edits: list[ConfigEdit]) -> tuple[int, int]:
     """Apply valid edits, printing required non-fatal warnings for skipped edits.
 
     Returns `(applied_edit_count, warning_count)`.
@@ -166,7 +166,7 @@ def apply_config_edits(etc_dir: Path, edits: list[ConfigEdit]) -> tuple[int, int
 
     for edit in edits:
         relative_file = PurePosixPath(edit.relative_file)
-        path = etc_dir.joinpath(*relative_file.parts)
+        path = config_dir.joinpath(*relative_file.parts)
         if not path.is_file():
             print(_warning(edit.relative_file, edit.key, "<file-missing>", edit.value))
             warning_count += 1
@@ -212,12 +212,12 @@ def apply_config_edits(etc_dir: Path, edits: list[ConfigEdit]) -> tuple[int, int
     return applied, warning_count
 
 
-def stage_and_edit_configs(etc_dir: Path, edits_path: Path = DEFAULT_CONFIG_EDITS_PATH) -> tuple[int, int, int]:
+def stage_and_edit_configs(config_dir: Path, edits_path: Path = DEFAULT_CONFIG_EDITS_PATH) -> tuple[int, int, int]:
     """Copy all templates, then apply the editable package-only config map."""
-    etc_dir = etc_dir.resolve()
+    config_dir = config_dir.resolve()
     edits = load_config_edits(edits_path)
-    copied = copy_templates_to_active_configs(etc_dir)
-    applied, warnings = apply_config_edits(etc_dir, edits)
+    copied = copy_templates_to_active_configs(config_dir)
+    applied, warnings = apply_config_edits(config_dir, edits)
     return copied, applied, warnings
 
 
@@ -225,10 +225,10 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--etc-dir", type=Path, required=True, help="package etc/ directory containing .conf.dist files")
+    parser.add_argument("--config-dir", type=Path, required=True, help="package configs/ directory containing .conf.dist files")
     parser.add_argument("--config-edits", type=Path, default=DEFAULT_CONFIG_EDITS_PATH, help="editable JSON map")
     args = parser.parse_args()
-    copied, applied, warnings = stage_and_edit_configs(args.etc_dir, args.config_edits)
+    copied, applied, warnings = stage_and_edit_configs(args.config_dir, args.config_edits)
     print(f"Created {copied} active .conf copies; applied {applied} config edits; {warnings} warning(s).")
     return 0
 
